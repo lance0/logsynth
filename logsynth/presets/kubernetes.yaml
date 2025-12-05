@@ -1,0 +1,51 @@
+name: kubernetes
+format: plain
+pattern: |
+  $ts $level $component $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 200ms
+    jitter: 100ms
+    format: "%Y-%m-%dT%H:%M:%SZ"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["I", "W", "E", "F"]
+    weights: [0.70, 0.18, 0.10, 0.02]
+
+  component:
+    type: choice
+    values: ["kubelet", "kube-apiserver", "kube-scheduler", "kube-controller-manager", "etcd", "kube-proxy"]
+    weights: [0.35, 0.20, 0.12, 0.15, 0.10, 0.08]
+
+  message:
+    type: choice
+    values:
+      - "Pod app-server-7b9f8c6d5-x2k4m successfully created in namespace production"
+      - "Container api-container started in pod app-server-7b9f8c6d5-x2k4m"
+      - "Pulling image docker.io/company/app:v2.3.1"
+      - "Successfully pulled image docker.io/company/app:v2.3.1 in 3.245s"
+      - "Created container api-container"
+      - "Started container api-container"
+      - "Liveness probe failed: HTTP probe failed with statuscode: 503"
+      - "Readiness probe failed: connection refused"
+      - "Back-off restarting failed container"
+      - "Container api-container exceeded memory limit (512Mi)"
+      - "Killing container with id docker://abc123 (OOMKilled)"
+      - "Pod app-server-7b9f8c6d5-x2k4m terminated (Completed)"
+      - "Successfully assigned production/app-server-7b9f8c6d5-x2k4m to node-pool-1-abc123"
+      - "Node node-pool-1-abc123 status is now: Ready"
+      - "Node node-pool-1-def456 condition Ready is now: False"
+      - "Scaled deployment app-server from 3 to 5 replicas"
+      - "Rolling update started for deployment app-server"
+      - "Deployment app-server rollout complete: 5 replicas available"
+      - "ConfigMap production/app-config updated"
+      - "Secret production/app-secrets updated"
+      - "Service production/app-service created"
+      - "Ingress production/app-ingress created with host app.example.com"
+      - "PersistentVolumeClaim data-pvc bound to pv-12345"
+      - "HorizontalPodAutoscaler production/app-hpa: scaled to 8 replicas"
+      - "CronJob production/backup: created job backup-28401920"

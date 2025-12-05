@@ -1,0 +1,46 @@
+name: mysql
+format: plain
+pattern: |
+  $ts $tid [$level] [Server] $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 150ms
+    jitter: 50ms
+    format: "%Y-%m-%dT%H:%M:%S.%fZ"
+    tz: UTC
+
+  tid:
+    type: int
+    min: 1
+    max: 999999
+
+  level:
+    type: choice
+    values: ["Note", "Warning", "Error", "System"]
+    weights: [0.55, 0.25, 0.12, 0.08]
+
+  message:
+    type: choice
+    values:
+      - "Aborted connection 12847 to db: 'production' user: 'app_user' host: '10.0.0.15' (Got timeout reading communication packets)"
+      - "Access denied for user 'root'@'10.0.0.50' (using password: YES)"
+      - "Got an error reading communication packets"
+      - "Sort aborted: Query execution was interrupted"
+      - "Table './production/orders' is marked as crashed and should be repaired"
+      - "InnoDB: Buffer pool(s) load completed at timestamp"
+      - "InnoDB: Completed checkpoint operation"
+      - "InnoDB: Initializing buffer pool, total size = 128.000000M"
+      - "Ready for connections. Version: '8.0.35' socket: '/var/run/mysqld/mysqld.sock' port: 3306"
+      - "Shutting down plugin 'InnoDB'"
+      - "Server hostname (bind-address): '*'; port: 3306"
+      - "Event Scheduler: Loaded 0 events"
+      - "Starting replication from host '10.0.1.5', port 3306"
+      - "Slave SQL thread initialized, starting replication"
+      - "Replica has read all relay log; waiting for more updates"
+      - "Binary logging is disabled. Skipping crash recovery."
+      - "Slow query detected: 2.534 seconds. Query: SELECT * FROM orders WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)"
+      - "Lock wait timeout exceeded; try restarting transaction"
+      - "Deadlock found when trying to get lock; try restarting transaction"
+      - "Too many connections"

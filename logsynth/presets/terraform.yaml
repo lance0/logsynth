@@ -1,0 +1,53 @@
+name: terraform
+format: plain
+pattern: |
+  $ts [$level] $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 500ms
+    jitter: 200ms
+    format: "%Y-%m-%dT%H:%M:%S.%f%z"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["INFO", "WARN", "ERROR", "DEBUG"]
+    weights: [0.70, 0.15, 0.10, 0.05]
+
+  message:
+    type: choice
+    values:
+      - "Initializing the backend..."
+      - "Initializing provider plugins..."
+      - "Finding hashicorp/aws versions matching \"~> 5.0\"..."
+      - "Installing hashicorp/aws v5.31.0..."
+      - "Installed hashicorp/aws v5.31.0 (signed by HashiCorp)"
+      - "Terraform has been successfully initialized!"
+      - "Refreshing state..."
+      - "aws_instance.web: Refreshing state... [id=i-0abc123def456789]"
+      - "aws_security_group.allow_http: Refreshing state... [id=sg-0abc123456789def]"
+      - "aws_vpc.main: Refreshing state... [id=vpc-0abc123456789def]"
+      - "Plan: 3 to add, 1 to change, 0 to destroy."
+      - "Plan: 0 to add, 0 to change, 2 to destroy."
+      - "aws_instance.web: Creating..."
+      - "aws_instance.web: Still creating... [10s elapsed]"
+      - "aws_instance.web: Still creating... [20s elapsed]"
+      - "aws_instance.web: Creation complete after 32s [id=i-0abc123def456789]"
+      - "aws_instance.web: Modifying... [id=i-0abc123def456789]"
+      - "aws_instance.web: Modifications complete after 5s"
+      - "aws_instance.web: Destroying... [id=i-0abc123def456789]"
+      - "aws_instance.web: Destruction complete after 45s"
+      - "aws_s3_bucket.data: Creating..."
+      - "aws_s3_bucket.data: Creation complete after 3s [id=my-data-bucket-prod]"
+      - "Error: creating EC2 Instance: UnauthorizedOperation: You are not authorized to perform this operation"
+      - "Error: error configuring Terraform AWS Provider: no valid credential sources found"
+      - "Warning: Argument is deprecated"
+      - "Warning: Resource targeting is in effect"
+      - "Apply complete! Resources: 3 added, 1 changed, 0 destroyed."
+      - "Destroy complete! Resources: 5 destroyed."
+      - "Releasing state lock. This may take a few moments..."
+      - "State lock acquired successfully"
+      - "Acquiring state lock. This may take a few moments..."
+      - "Outputs: vpc_id = \"vpc-0abc123456789def\""

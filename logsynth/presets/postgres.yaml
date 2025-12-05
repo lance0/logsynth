@@ -1,0 +1,61 @@
+name: postgres
+format: plain
+pattern: |
+  $ts $tz [$pid] $user@$database $level: $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 200ms
+    jitter: 100ms
+    format: "%Y-%m-%d %H:%M:%S.%f"
+    tz: UTC
+
+  tz:
+    type: literal
+    value: "UTC"
+
+  pid:
+    type: int
+    min: 1000
+    max: 65535
+
+  user:
+    type: choice
+    values: ["postgres", "app_user", "admin", "readonly", "replication"]
+    weights: [0.20, 0.50, 0.15, 0.10, 0.05]
+
+  database:
+    type: choice
+    values: ["production", "analytics", "users", "orders", "postgres"]
+    weights: [0.35, 0.20, 0.20, 0.15, 0.10]
+
+  level:
+    type: choice
+    values: ["LOG", "WARNING", "ERROR", "FATAL", "NOTICE", "DEBUG"]
+    weights: [0.60, 0.15, 0.12, 0.03, 0.07, 0.03]
+
+  message:
+    type: choice
+    values:
+      - "connection received: host=10.0.0.15 port=52341"
+      - "connection authorized: user=app_user database=production"
+      - "disconnection: session time: 0:05:23.456 user=app_user database=production host=10.0.0.15 port=52341"
+      - "statement: SELECT * FROM users WHERE id = $1"
+      - "statement: UPDATE orders SET status = $1 WHERE id = $2"
+      - "duration: 125.432 ms  statement: SELECT * FROM products WHERE category_id = 5"
+      - "duration: 2534.123 ms  statement: SELECT * FROM orders JOIN users ON orders.user_id = users.id"
+      - "checkpoint starting: time"
+      - "checkpoint complete: wrote 1524 buffers (9.3%); 0 WAL file(s) added"
+      - "automatic vacuum of table \"production.public.orders\": index scans: 1"
+      - "automatic analyze of table \"production.public.users\""
+      - "could not receive data from client: Connection reset by peer"
+      - "terminating connection due to administrator command"
+      - "database system is ready to accept connections"
+      - "received fast shutdown request"
+      - "aborting any active transactions"
+      - "shutting down"
+      - "database system is shut down"
+      - "deadlock detected"
+      - "canceling statement due to lock timeout"
+      - "temporary file: path \"base/pgsql_tmp/pgsql_tmp12847.0\", size 104857600"

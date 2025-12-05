@@ -1,0 +1,53 @@
+name: auth
+format: plain
+pattern: |
+  $ts $hostname $service[$pid]: $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 500ms
+    jitter: 200ms
+    format: "%b %d %H:%M:%S"
+    tz: UTC
+
+  hostname:
+    type: choice
+    values: ["server-01", "server-02", "web-prod-01", "db-master"]
+    weights: [0.30, 0.30, 0.25, 0.15]
+
+  service:
+    type: choice
+    values: ["sshd", "sudo", "su", "login", "systemd-logind", "polkitd", "gdm-password"]
+    weights: [0.35, 0.25, 0.10, 0.10, 0.08, 0.07, 0.05]
+
+  pid:
+    type: int
+    min: 1000
+    max: 65535
+
+  message:
+    type: choice
+    values:
+      - "Accepted publickey for deploy from 10.0.0.15 port 52341 ssh2: RSA SHA256:abc123def456"
+      - "Accepted password for admin from 10.0.0.20 port 48821 ssh2"
+      - "Failed password for admin from 10.0.0.50 port 38291 ssh2"
+      - "Failed password for invalid user root from 192.168.1.100 port 44521 ssh2"
+      - "Invalid user admin from 192.168.1.100 port 44522"
+      - "Connection closed by authenticating user admin 10.0.0.15 port 52342 [preauth]"
+      - "Disconnected from user deploy 10.0.0.15 port 52341"
+      - "pam_unix(sshd:session): session opened for user deploy(uid=1001) by (uid=0)"
+      - "pam_unix(sshd:session): session closed for user deploy"
+      - "pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1000)"
+      - "pam_unix(sudo:session): session closed for user root"
+      - "admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/bin/systemctl restart nginx"
+      - "admin : 3 incorrect password attempts ; TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/bin/cat /etc/shadow"
+      - "pam_unix(su:session): session opened for user postgres(uid=26) by admin(uid=1000)"
+      - "New session 1234 of user admin."
+      - "Removed session 1234."
+      - "New seat seat0."
+      - "Registered Authentication Agent for unix-process:12847:123456"
+      - "Unregistered Authentication Agent for unix-process:12847:123456"
+      - "PAM unable to dlopen(/lib/security/pam_deny.so): /lib/security/pam_deny.so: cannot open shared object file"
+      - "authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=192.168.1.100 user=root"
+      - "pam_succeed_if(sshd:auth): requirement \"uid >= 1000\" not met by user \"root\""

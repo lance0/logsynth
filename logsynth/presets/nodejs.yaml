@@ -1,0 +1,60 @@
+name: nodejs
+format: plain
+pattern: |
+  [$ts] $level: $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 50ms
+    jitter: 25ms
+    format: "%Y-%m-%dT%H:%M:%S.%fZ"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["info", "debug", "warn", "error", "silly", "verbose"]
+    weights: [0.50, 0.20, 0.12, 0.12, 0.03, 0.03]
+
+  message:
+    type: choice
+    values:
+      - "Server starting..."
+      - "Loading environment variables from .env"
+      - "Connecting to MongoDB at mongodb://10.0.1.5:27017/production"
+      - "MongoDB connection established"
+      - "Connecting to Redis at redis://10.0.1.10:6379"
+      - "Redis client ready"
+      - "Express server listening on port 3000"
+      - "Server startup complete"
+      - "GET /api/v1/users/123 200 45ms"
+      - "POST /api/v1/orders 201 123ms"
+      - "GET /api/v1/products 200 67ms"
+      - "GET /health 200 2ms"
+      - "DELETE /api/v1/users/456 204 34ms"
+      - "Incoming request: { method: 'GET', path: '/api/v1/users', ip: '10.0.0.15' }"
+      - "Processing order for user_id: 123"
+      - "Order created successfully: order_id=abc123"
+      - "Cache hit for key: user:123"
+      - "Cache miss for key: product:456"
+      - "JWT token validated for user: admin"
+      - "Session created: session_id=xyz789"
+      - "WebSocket connection established: client_id=ws123"
+      - "WebSocket message received: { type: 'subscribe', channel: 'orders' }"
+      - "WebSocket connection closed: client_id=ws123"
+      - "Slow query detected: 2534ms - db.orders.find({ status: 'pending' })"
+      - "Rate limit exceeded for IP: 10.0.0.50"
+      - "Authentication failed: invalid credentials"
+      - "GET /api/v1/admin 401 12ms - Unauthorized"
+      - "POST /api/v1/orders 400 8ms - Validation error: missing required field 'items'"
+      - "MongoNetworkError: connection refused to 10.0.1.5:27017"
+      - "Redis connection lost, attempting reconnect..."
+      - "Redis reconnected successfully"
+      - "Unhandled promise rejection: TypeError: Cannot read property 'id' of undefined"
+      - "Error in request handler: ReferenceError: user is not defined"
+      - "Memory usage: { heapUsed: 156MB, heapTotal: 256MB, external: 12MB }"
+      - "Graceful shutdown initiated"
+      - "Closing database connections..."
+      - "Server stopped accepting new connections"
+      - "All pending requests completed"
+      - "Shutdown complete"

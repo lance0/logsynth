@@ -1,0 +1,56 @@
+name: sshd
+format: plain
+pattern: |
+  $ts $hostname sshd[$pid]: $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 300ms
+    jitter: 150ms
+    format: "%b %d %H:%M:%S"
+    tz: UTC
+
+  hostname:
+    type: choice
+    values: ["bastion-01", "bastion-02", "jump-server", "ssh-gateway"]
+    weights: [0.35, 0.30, 0.20, 0.15]
+
+  pid:
+    type: int
+    min: 1000
+    max: 65535
+
+  message:
+    type: choice
+    values:
+      - "Server listening on 0.0.0.0 port 22."
+      - "Server listening on :: port 22."
+      - "Connection from 10.0.0.15 port 52341 on 10.0.0.5 port 22 rdomain \"\""
+      - "Accepted publickey for deploy from 10.0.0.15 port 52341 ssh2: ECDSA SHA256:abc123def456ghi789"
+      - "Accepted publickey for admin from 10.0.0.20 port 48821 ssh2: ED25519 SHA256:xyz789abc123def456"
+      - "Accepted password for developer from 10.0.0.25 port 39281 ssh2"
+      - "Failed publickey for deploy from 10.0.0.15 port 52342 ssh2: RSA SHA256:invalid123key456"
+      - "Failed password for admin from 10.0.0.50 port 38291 ssh2"
+      - "Failed password for invalid user root from 192.168.1.100 port 44521 ssh2"
+      - "Invalid user admin from 192.168.1.100 port 44522"
+      - "User deploy from 10.0.0.15 not allowed because not listed in AllowUsers"
+      - "Connection closed by authenticating user admin 10.0.0.15 port 52342 [preauth]"
+      - "Connection reset by 192.168.1.100 port 44523 [preauth]"
+      - "Disconnected from user deploy 10.0.0.15 port 52341"
+      - "Received disconnect from 10.0.0.15 port 52341:11: disconnected by user"
+      - "pam_unix(sshd:session): session opened for user deploy(uid=1001) by (uid=0)"
+      - "pam_unix(sshd:session): session closed for user deploy"
+      - "Starting session: shell on pts/0 for deploy from 10.0.0.15 port 52341 id 0"
+      - "Close session: user deploy from 10.0.0.15 port 52341 id 0"
+      - "Received signal 15; terminating."
+      - "Exiting on signal 15"
+      - "fatal: Timeout before authentication for 192.168.1.100 port 44524"
+      - "error: maximum authentication attempts exceeded for admin from 10.0.0.50 port 38291 ssh2 [preauth]"
+      - "error: PAM: Authentication failure for admin from 10.0.0.50"
+      - "Postponed publickey for deploy from 10.0.0.15 port 52341 ssh2 [preauth]"
+      - "debug1: Forked child 12847."
+      - "reprocess config line 47: Deprecated option UsePrivilegeSeparation"
+      - "banner exchange: Connection from 192.168.1.100 port 44525: invalid format"
+      - "Unable to negotiate with 192.168.1.100 port 44526: no matching key exchange method found."
+      - "Bad protocol version identification 'GET / HTTP/1.1' from 192.168.1.100 port 44527"

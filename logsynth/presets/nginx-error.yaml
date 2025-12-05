@@ -1,0 +1,51 @@
+name: nginx-error
+format: plain
+pattern: |
+  $ts [$level] $pid#$tid: *$cid $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 500ms
+    jitter: 200ms
+    format: "%Y/%m/%d %H:%M:%S"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["debug", "info", "notice", "warn", "error", "crit", "alert", "emerg"]
+    weights: [0.05, 0.20, 0.15, 0.25, 0.25, 0.05, 0.03, 0.02]
+
+  pid:
+    type: int
+    min: 1000
+    max: 65535
+
+  tid:
+    type: int
+    min: 0
+    max: 32
+
+  cid:
+    type: int
+    min: 1
+    max: 999999
+
+  message:
+    type: choice
+    values:
+      - "client closed connection while waiting for request, client: 10.0.0.15, server: example.com"
+      - "upstream timed out (110: Connection timed out) while reading response header from upstream"
+      - "connect() failed (111: Connection refused) while connecting to upstream"
+      - "no live upstreams while connecting to upstream"
+      - "recv() failed (104: Connection reset by peer)"
+      - "open() \"/var/www/html/favicon.ico\" failed (2: No such file or directory)"
+      - "directory index of \"/var/www/html/\" is forbidden"
+      - "access forbidden by rule, client: 10.0.0.50"
+      - "SSL_do_handshake() failed (SSL: error:0A000086:SSL routines::certificate verify failed)"
+      - "client intended to send too large body: 10485760 bytes"
+      - "limiting requests, excess: 5.432 by zone \"api_limit\""
+      - "upstream prematurely closed connection while reading response header"
+      - "worker process exited on signal 9"
+      - "start worker process 12847"
+      - "gracefully shutting down"

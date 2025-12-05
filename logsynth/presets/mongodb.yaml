@@ -1,0 +1,53 @@
+name: mongodb
+format: plain
+pattern: |
+  {"t":"$ts","s":"$severity","c":"$component","id":$id,"ctx":"$context","msg":"$message"}
+
+fields:
+  ts:
+    type: timestamp
+    step: 100ms
+    jitter: 50ms
+    format: "%Y-%m-%dT%H:%M:%S.%fZ"
+    tz: UTC
+
+  severity:
+    type: choice
+    values: ["I", "W", "E", "F", "D"]
+    weights: [0.70, 0.15, 0.10, 0.02, 0.03]
+
+  component:
+    type: choice
+    values: ["NETWORK", "COMMAND", "STORAGE", "REPL", "SHARDING", "ACCESS", "QUERY", "INDEX", "CONTROL"]
+    weights: [0.20, 0.25, 0.12, 0.10, 0.05, 0.08, 0.10, 0.05, 0.05]
+
+  id:
+    type: int
+    min: 20000
+    max: 29999
+
+  context:
+    type: choice
+    values: ["conn123", "conn456", "conn789", "initandlisten", "WTCheckpointThread", "ReplCoord", "ftdc"]
+    weights: [0.25, 0.25, 0.20, 0.10, 0.08, 0.07, 0.05]
+
+  message:
+    type: choice
+    values:
+      - "Connection accepted from 10.0.0.15:52341 #123 (5 connections now open)"
+      - "End of connection thread 10.0.0.15:52341 #123 (4 connections now open)"
+      - "Received client metadata from 10.0.0.15:52341 conn123: { driver: { name: 'nodejs', version: '6.0.0' } }"
+      - "Successfully authenticated as principal app_user on production from client 10.0.0.15:52341"
+      - "Authentication failed for app_user on production from client 10.0.0.50:48821"
+      - "Slow query detected { find: 'orders', filter: { status: 'pending' } } planSummary: COLLSCAN keysExamined:0 docsExamined:125000 numYields:976 nreturned:1234 reslen:524288 locks:{ ReplicationStateTransition: { acquireCount: { w: 977 } } } storage:{} protocol:op_msg 2534ms"
+      - "Index build completed: orders.$status_1 { status: 1 }"
+      - "WiredTiger checkpoint complete"
+      - "Replica set state transition: SECONDARY -> PRIMARY"
+      - "Transition to PRIMARY complete; database writes are now permitted"
+      - "Syncing from: 10.0.1.5:27017"
+      - "Applied 1024 operations in 523ms"
+      - "Waiting for write concern: { w: 'majority', wtimeout: 5000 }"
+      - "Write concern timeout waiting for replication"
+      - "Server is shutting down"
+      - "Waiting for connections to close before shutdown"
+      - "Shutdown complete"

@@ -1,0 +1,56 @@
+name: docker
+format: plain
+pattern: |
+  $ts $level $component $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 100ms
+    jitter: 50ms
+    format: "%Y-%m-%dT%H:%M:%S.%fZ"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["INFO", "WARN", "ERRO", "DEBU"]
+    weights: [0.65, 0.18, 0.12, 0.05]
+
+  component:
+    type: choice
+    values: ["dockerd", "containerd", "runc", "libnetwork", "volume", "image", "container"]
+    weights: [0.25, 0.20, 0.10, 0.12, 0.08, 0.12, 0.13]
+
+  message:
+    type: choice
+    values:
+      - "Starting container abc123def456"
+      - "Container abc123def456 started successfully"
+      - "Stopping container abc123def456"
+      - "Container abc123def456 stopped"
+      - "Killing container abc123def456 with signal SIGTERM"
+      - "Container abc123def456 failed to exit within 10s, sending SIGKILL"
+      - "Pulling image docker.io/library/nginx:latest"
+      - "Layer sha256:abc123 already exists"
+      - "Pushed docker.io/company/app:v2.3.1"
+      - "Creating network bridge-net"
+      - "Connecting container abc123 to network bridge-net"
+      - "Disconnecting container abc123 from network bridge-net"
+      - "Creating volume data-vol"
+      - "Mounting volume data-vol to /var/data"
+      - "Removing volume data-vol"
+      - "Health check for container abc123: healthy"
+      - "Health check for container abc123: unhealthy - exit code 1"
+      - "Container abc123 OOMKilled: memory limit exceeded (512MB)"
+      - "Restarting container abc123 (restart policy: always)"
+      - "Container abc123 exited with code 0"
+      - "Container abc123 exited with code 1"
+      - "Failed to create container: no space left on device"
+      - "Cleaning up dangling images"
+      - "Pruned 15 unused images, reclaimed 2.3GB"
+      - "Unable to pull image: unauthorized"
+      - "Port 8080 already in use by container def456"
+      - "Starting Docker daemon with storage driver overlay2"
+      - "Docker daemon started successfully"
+      - "Received signal SIGTERM, shutting down"
+      - "All containers stopped, daemon shutdown complete"

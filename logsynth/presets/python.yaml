@@ -1,0 +1,67 @@
+name: python
+format: plain
+pattern: |
+  $ts - $name - $level - $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 100ms
+    jitter: 50ms
+    format: "%Y-%m-%d %H:%M:%S,%f"
+    tz: UTC
+
+  name:
+    type: choice
+    values:
+      - "app"
+      - "app.api"
+      - "app.api.routes"
+      - "app.services.user"
+      - "app.services.order"
+      - "app.db"
+      - "uvicorn.access"
+      - "uvicorn.error"
+      - "sqlalchemy.engine"
+      - "celery.worker"
+      - "celery.task"
+    weights: [0.12, 0.10, 0.12, 0.12, 0.10, 0.10, 0.10, 0.06, 0.06, 0.06, 0.06]
+
+  level:
+    type: choice
+    values: ["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"]
+    weights: [0.55, 0.20, 0.12, 0.10, 0.03]
+
+  message:
+    type: choice
+    values:
+      - "Application starting up..."
+      - "Loading configuration from /etc/app/config.yaml"
+      - "Configuration loaded successfully"
+      - "Connecting to database postgresql://app_user@10.0.1.5:5432/production"
+      - "Database connection established"
+      - "Starting web server on 0.0.0.0:8000"
+      - "Application startup complete"
+      - "GET /api/v1/users/123 HTTP/1.1 200 OK"
+      - "POST /api/v1/orders HTTP/1.1 201 Created"
+      - "GET /health HTTP/1.1 200 OK"
+      - "Processing request for user_id=123"
+      - "Query executed in 0.045s: SELECT * FROM users WHERE id = %s"
+      - "Cache hit for key: user:123"
+      - "Cache miss for key: order:456, fetching from database"
+      - "Task celery.tasks.process_order[abc123-def456] received"
+      - "Task celery.tasks.process_order[abc123-def456] succeeded in 1.234s"
+      - "Task celery.tasks.send_email[xyz789] started"
+      - "Slow query detected (2.534s): SELECT * FROM orders WHERE created_at > %s"
+      - "Rate limit exceeded for client 10.0.0.15"
+      - "Authentication failed for user admin"
+      - "Connection refused: Unable to connect to Redis at 10.0.1.10:6379"
+      - "Retrying database connection (attempt 2/5)"
+      - "Worker pool exhausted, request queued"
+      - "MemoryError: Unable to allocate 512 MB for array"
+      - "Unhandled exception in request handler: ValueError('Invalid input')"
+      - "Traceback (most recent call last): File \"/app/api/routes.py\", line 45"
+      - "Received SIGTERM, initiating graceful shutdown"
+      - "Closing database connections..."
+      - "All workers finished, shutdown complete"
+      - "Application stopped"

@@ -1,0 +1,145 @@
+name: haproxy
+format: plain
+pattern: |
+  $ts $hostname haproxy[$pid]: $client:$client_port [$accept_ts] $frontend $backend/$server $tq/$tw/$tc/$tr/$tt $status $bytes_read $captured_request_cookie $captured_response_cookie $termination_state $actconn/$feconn/$beconn/$srv_conn/$retries $srv_queue/$backend_queue "$method $path HTTP/1.1"
+
+fields:
+  ts:
+    type: timestamp
+    step: 50ms
+    jitter: 20ms
+    format: "%b %d %H:%M:%S"
+    tz: UTC
+
+  hostname:
+    type: choice
+    values: ["lb-01", "lb-02", "haproxy-prod", "haproxy-edge"]
+
+  pid:
+    type: int
+    min: 1000
+    max: 32000
+
+  client:
+    type: ip
+    cidr: 10.0.0.0/8
+
+  client_port:
+    type: int
+    min: 32000
+    max: 65535
+
+  accept_ts:
+    type: timestamp
+    step: 50ms
+    format: "%d/%b/%Y:%H:%M:%S.%f"
+
+  frontend:
+    type: choice
+    values: ["http-in", "https-in", "api-frontend", "admin-fe"]
+    weights: [0.3, 0.4, 0.25, 0.05]
+
+  backend:
+    type: choice
+    values: ["web-servers", "api-servers", "static-content", "admin-backend"]
+    weights: [0.35, 0.40, 0.20, 0.05]
+
+  server:
+    type: choice
+    values: ["web1", "web2", "web3", "api1", "api2", "<NOSRV>"]
+    weights: [0.20, 0.20, 0.20, 0.18, 0.18, 0.04]
+
+  tq:
+    type: int
+    min: 0
+    max: 50
+
+  tw:
+    type: int
+    min: 0
+    max: 100
+
+  tc:
+    type: int
+    min: 1
+    max: 500
+
+  tr:
+    type: int
+    min: 5
+    max: 5000
+
+  tt:
+    type: int
+    min: 10
+    max: 6000
+
+  status:
+    type: choice
+    values: [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 500, 502, 503, 504]
+    weights: [0.65, 0.05, 0.02, 0.02, 0.02, 0.05, 0.02, 0.02, 0.01, 0.05, 0.03, 0.02, 0.02, 0.02]
+
+  bytes_read:
+    type: int
+    min: 100
+    max: 500000
+
+  captured_request_cookie:
+    type: choice
+    values: ["-", "SERVERID=s1", "SERVERID=s2"]
+    weights: [0.7, 0.15, 0.15]
+
+  captured_response_cookie:
+    type: choice
+    values: ["-", "SERVERID=s1", "SERVERID=s2"]
+    weights: [0.8, 0.1, 0.1]
+
+  termination_state:
+    type: choice
+    values: ["----", "LR--", "CR--", "SC--", "sH--", "SD--"]
+    weights: [0.85, 0.05, 0.03, 0.03, 0.02, 0.02]
+
+  actconn:
+    type: int
+    min: 1
+    max: 500
+
+  feconn:
+    type: int
+    min: 1
+    max: 200
+
+  beconn:
+    type: int
+    min: 1
+    max: 100
+
+  srv_conn:
+    type: int
+    min: 0
+    max: 50
+
+  retries:
+    type: int
+    min: 0
+    max: 3
+
+  srv_queue:
+    type: int
+    min: 0
+    max: 10
+
+  backend_queue:
+    type: int
+    min: 0
+    max: 20
+
+  method:
+    type: choice
+    values: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+    weights: [0.70, 0.18, 0.05, 0.04, 0.03]
+
+  path:
+    type: choice
+    values: ["/", "/api/v1/users", "/api/v1/products", "/api/v1/orders", "/health", "/static/app.js"]
+    weights: [0.15, 0.25, 0.25, 0.15, 0.10, 0.10]

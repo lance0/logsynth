@@ -1,0 +1,103 @@
+name: firewall
+format: plain
+pattern: |
+  $ts $hostname kernel: [$uptime] $chain $action IN=$in_iface OUT=$out_iface MAC=$mac SRC=$src DST=$dst LEN=$len TOS=$tos PREC=$prec TTL=$ttl ID=$id PROTO=$proto SPT=$spt DPT=$dpt $extra
+
+fields:
+  ts:
+    type: timestamp
+    step: 50ms
+    jitter: 20ms
+    format: "%b %d %H:%M:%S"
+    tz: UTC
+
+  hostname:
+    type: choice
+    values: ["fw-01", "fw-02", "edge-firewall", "internal-fw"]
+    weights: [0.35, 0.30, 0.20, 0.15]
+
+  uptime:
+    type: float
+    min: 1000.0
+    max: 9999999.9
+    precision: 6
+
+  chain:
+    type: choice
+    values: ["INPUT", "OUTPUT", "FORWARD", "DOCKER-USER", "ufw-block-input"]
+    weights: [0.35, 0.15, 0.30, 0.10, 0.10]
+
+  action:
+    type: choice
+    values: ["DROP", "REJECT", "ACCEPT", "LOG"]
+    weights: [0.45, 0.15, 0.30, 0.10]
+
+  in_iface:
+    type: choice
+    values: ["eth0", "eth1", "ens192", "br0", "docker0", ""]
+    weights: [0.30, 0.20, 0.20, 0.10, 0.10, 0.10]
+
+  out_iface:
+    type: choice
+    values: ["", "eth0", "eth1", "ens192", "br0", "docker0"]
+    weights: [0.40, 0.20, 0.15, 0.10, 0.08, 0.07]
+
+  mac:
+    type: choice
+    values:
+      - "aa:bb:cc:dd:ee:ff:11:22:33:44:55:66:08:00"
+      - "11:22:33:44:55:66:aa:bb:cc:dd:ee:ff:08:00"
+      - "de:ad:be:ef:ca:fe:12:34:56:78:9a:bc:08:00"
+
+  src:
+    type: ip
+    cidr: 0.0.0.0/0
+
+  dst:
+    type: ip
+    cidr: 10.0.0.0/8
+
+  len:
+    type: int
+    min: 40
+    max: 1500
+
+  tos:
+    type: choice
+    values: ["0x00", "0x10", "0x08"]
+    weights: [0.90, 0.05, 0.05]
+
+  prec:
+    type: choice
+    values: ["0x00", "0x20", "0x40"]
+    weights: [0.95, 0.03, 0.02]
+
+  ttl:
+    type: int
+    min: 1
+    max: 128
+
+  id:
+    type: int
+    min: 1
+    max: 65535
+
+  proto:
+    type: choice
+    values: ["TCP", "UDP", "ICMP"]
+    weights: [0.60, 0.30, 0.10]
+
+  spt:
+    type: int
+    min: 1024
+    max: 65535
+
+  dpt:
+    type: choice
+    values: [22, 80, 443, 3306, 5432, 6379, 8080, 8443, 27017]
+    weights: [0.15, 0.15, 0.25, 0.08, 0.08, 0.05, 0.10, 0.09, 0.05]
+
+  extra:
+    type: choice
+    values: ["WINDOW=65535 RES=0x00 SYN URGP=0", "WINDOW=502 RES=0x00 ACK URGP=0", "WINDOW=0 RES=0x00 RST URGP=0", ""]
+    weights: [0.35, 0.30, 0.10, 0.25]

@@ -1,0 +1,72 @@
+name: java
+format: plain
+pattern: |
+  $ts $level [$thread] $logger - $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 50ms
+    jitter: 20ms
+    format: "%Y-%m-%d %H:%M:%S.%f"
+    tz: UTC
+
+  level:
+    type: choice
+    values: ["INFO", "DEBUG", "WARN", "ERROR", "TRACE"]
+    weights: [0.55, 0.20, 0.12, 0.10, 0.03]
+
+  thread:
+    type: choice
+    values: ["main", "http-nio-8080-exec-1", "http-nio-8080-exec-2", "http-nio-8080-exec-3", "scheduling-1", "pool-1-thread-1", "pool-1-thread-2", "AsyncTask-1", "kafka-consumer-1"]
+    weights: [0.10, 0.18, 0.17, 0.15, 0.10, 0.08, 0.08, 0.07, 0.07]
+
+  logger:
+    type: choice
+    values:
+      - "com.company.app.Application"
+      - "com.company.app.controller.UserController"
+      - "com.company.app.controller.OrderController"
+      - "com.company.app.service.UserService"
+      - "com.company.app.service.OrderService"
+      - "com.company.app.repository.UserRepository"
+      - "org.springframework.boot.SpringApplication"
+      - "org.springframework.web.servlet.DispatcherServlet"
+      - "org.hibernate.SQL"
+      - "org.apache.kafka.clients.consumer.ConsumerCoordinator"
+      - "com.zaxxer.hikari.HikariDataSource"
+    weights: [0.10, 0.12, 0.12, 0.12, 0.12, 0.08, 0.08, 0.08, 0.06, 0.06, 0.06]
+
+  message:
+    type: choice
+    values:
+      - "Starting Application v2.3.1 using Java 17.0.9 with PID 12847"
+      - "The following profiles are active: production"
+      - "Tomcat started on port(s): 8080 (http)"
+      - "Started Application in 8.234 seconds (process running for 9.012)"
+      - "Initializing Spring DispatcherServlet 'dispatcherServlet'"
+      - "Initializing Servlet 'dispatcherServlet'"
+      - "Completed initialization in 12 ms"
+      - "HikariPool-1 - Starting..."
+      - "HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@abc123"
+      - "HikariPool-1 - Start completed."
+      - "Handling GET request for /api/v1/users/123"
+      - "Handling POST request for /api/v1/orders"
+      - "Request processed successfully in 45ms"
+      - "select u.id, u.name, u.email from users u where u.id=?"
+      - "insert into orders (user_id, total, status) values (?, ?, ?)"
+      - "Kafka consumer subscribed to topics: [orders, events]"
+      - "Consumer group 'order-processor' rebalanced: partitions assigned [orders-0, orders-1]"
+      - "Processing message from topic orders partition 0 offset 12847"
+      - "Slow query detected: 2534ms - SELECT * FROM orders WHERE created_at > ?"
+      - "Connection pool exhausted, waiting for available connection"
+      - "Failed to process request: NullPointerException at UserService.java:123"
+      - "java.lang.OutOfMemoryError: Java heap space"
+      - "Connection refused to database host 10.0.1.5:5432"
+      - "Retrying database connection, attempt 2 of 5"
+      - "Circuit breaker 'orderService' is OPEN"
+      - "Received shutdown signal, gracefully stopping application"
+      - "Closing JPA EntityManagerFactory"
+      - "HikariPool-1 - Shutdown initiated..."
+      - "HikariPool-1 - Shutdown completed."
+      - "Application shutdown complete"

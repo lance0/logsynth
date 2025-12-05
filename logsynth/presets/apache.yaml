@@ -1,0 +1,78 @@
+name: apache
+format: plain
+pattern: |
+  $ip - $user [$ts] "$method $path HTTP/1.1" $status $size "$referrer" "$user_agent"
+
+fields:
+  ts:
+    type: timestamp
+    step: 100ms
+    jitter: 50ms
+    format: "%d/%b/%Y:%H:%M:%S %z"
+    tz: UTC
+
+  ip:
+    type: ip
+    cidr: 10.0.0.0/8
+
+  user:
+    type: choice
+    values: ["-", "admin", "www-data", "deploy", "api-user"]
+    weights: [0.85, 0.05, 0.04, 0.03, 0.03]
+
+  method:
+    type: choice
+    values: ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
+    weights: [0.70, 0.18, 0.04, 0.02, 0.03, 0.02, 0.01]
+
+  path:
+    type: choice
+    values:
+      - /
+      - /index.html
+      - /index.php
+      - /wp-admin/
+      - /wp-login.php
+      - /api/v1/users
+      - /api/v1/products
+      - /images/logo.png
+      - /css/style.css
+      - /js/app.js
+      - /favicon.ico
+      - /robots.txt
+      - /sitemap.xml
+      - /.env
+      - /phpmyadmin/
+    weights: [0.15, 0.10, 0.08, 0.05, 0.04, 0.12, 0.10, 0.08, 0.06, 0.06, 0.05, 0.04, 0.03, 0.02, 0.02]
+
+  status:
+    type: choice
+    values: [200, 201, 204, 301, 302, 304, 400, 401, 403, 404, 500, 502, 503]
+    weights: [0.65, 0.05, 0.03, 0.03, 0.02, 0.06, 0.02, 0.02, 0.02, 0.05, 0.02, 0.01, 0.02]
+
+  size:
+    type: int
+    min: 0
+    max: 500000
+
+  referrer:
+    type: choice
+    values:
+      - "-"
+      - "https://www.google.com/"
+      - "https://www.bing.com/"
+      - "https://example.com/"
+      - "https://example.com/products"
+    weights: [0.45, 0.25, 0.10, 0.12, 0.08]
+
+  user_agent:
+    type: choice
+    values:
+      - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+      - "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0"
+      - "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"
+      - "Googlebot/2.1 (+http://www.google.com/bot.html)"
+      - "curl/8.4.0"
+      - "python-requests/2.31.0"
+    weights: [0.35, 0.20, 0.15, 0.12, 0.08, 0.05, 0.05]
