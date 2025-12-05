@@ -41,7 +41,7 @@ logsynth run nginx --count 10 --format json
 - **Corruption injection** - Introduce malformed logs for testing error handling
 - **Output sinks** - stdout, files, TCP, or UDP
 - **LLM template generation** - Generate templates from natural language descriptions
-- **Built-in presets** - nginx, redis, systemd
+- **Built-in presets** - 19 presets for web servers, databases, infrastructure, security, and applications
 - **Parallel streams** - Run multiple templates concurrently
 - **Burst patterns** - Simulate high/low traffic patterns
 

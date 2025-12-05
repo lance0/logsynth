@@ -14,6 +14,17 @@ All notable changes to LogSynth will be documented in this file.
 - BufferedSink for non-blocking output
 - Corruption engine with 7 mutation types
 - Built-in presets: nginx, redis, systemd
+
+## [0.1.1] - 2025-12-05
+
+### Added
+- 16 new preset templates:
+  - Web servers: apache, nginx-error, haproxy
+  - Databases: postgres, mysql, mongodb
+  - Infrastructure: kubernetes, docker, terraform
+  - Security: auth, sshd, firewall, audit
+  - Applications: java, python, nodejs
+- Total presets now: 19
 - LLM-powered template generation (OpenAI-compatible API)
 - Parallel stream support
 - Burst pattern support

@@ -11,9 +11,16 @@
 - [x] Parallel streams
 - [x] Burst patterns
 
-## v0.2.0 (Planned)
+## v0.1.1 (Current)
+- [x] Additional presets (19 total)
+  - Web servers: apache, nginx-error, haproxy
+  - Databases: postgres, mysql, mongodb
+  - Infrastructure: kubernetes, docker, terraform
+  - Security: auth, sshd, firewall, audit
+  - Applications: java, python, nodejs
+
+## v0.2.0 (In Progress)
 - [ ] Per-stream rate syntax (`--stream nginx:rate=10`)
-- [ ] Additional presets (PostgreSQL, Apache, Kubernetes)
 - [ ] Jinja2 templating for complex patterns
 - [ ] Conditional field generation
 - [ ] Plugin system for custom field types
