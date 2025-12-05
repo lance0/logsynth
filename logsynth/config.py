@@ -22,6 +22,8 @@ def _get_xdg_config_home() -> Path:
 CONFIG_DIR: Path = _get_xdg_config_home() / "logsynth"
 CONFIG_FILE: Path = CONFIG_DIR / "config.yaml"
 GENERATED_DIR: Path = CONFIG_DIR / "generated"
+PROFILES_DIR: Path = CONFIG_DIR / "profiles"
+PLUGINS_DIR: Path = CONFIG_DIR / "plugins"
 
 # Package paths
 PACKAGE_DIR: Path = Path(__file__).parent
@@ -115,3 +117,71 @@ def save_config(config: Config) -> None:
     }
     with open(CONFIG_FILE, "w") as f:
         yaml.dump(data, f, default_flow_style=False)
+
+
+@dataclass
+class ProfileConfig:
+    """Named configuration profile with optional overrides."""
+
+    name: str
+    rate: float | None = None
+    format: str | None = None
+    output: str | None = None
+    duration: str | None = None
+    count: int | None = None
+    corrupt: float | None = None
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict[str, Any]) -> ProfileConfig:
+        """Create ProfileConfig from dictionary."""
+        return cls(
+            name=name,
+            rate=data.get("rate"),
+            format=data.get("format"),
+            output=data.get("output"),
+            duration=data.get("duration"),
+            count=data.get("count"),
+            corrupt=data.get("corrupt"),
+        )
+
+
+def load_profile(name: str) -> ProfileConfig | None:
+    """Load a profile by name from PROFILES_DIR.
+
+    Returns None if profile doesn't exist.
+    """
+    profile_path = PROFILES_DIR / f"{name}.yaml"
+    if not profile_path.exists():
+        return None
+    with open(profile_path) as f:
+        data = yaml.safe_load(f) or {}
+    return ProfileConfig.from_dict(name, data)
+
+
+def list_profiles() -> list[str]:
+    """List available profile names."""
+    if not PROFILES_DIR.exists():
+        return []
+    return sorted(p.stem for p in PROFILES_DIR.glob("*.yaml"))
+
+
+def save_profile(profile: ProfileConfig) -> Path:
+    """Save a profile to PROFILES_DIR."""
+    PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    profile_path = PROFILES_DIR / f"{profile.name}.yaml"
+    data: dict[str, Any] = {}
+    if profile.rate is not None:
+        data["rate"] = profile.rate
+    if profile.format is not None:
+        data["format"] = profile.format
+    if profile.output is not None:
+        data["output"] = profile.output
+    if profile.duration is not None:
+        data["duration"] = profile.duration
+    if profile.count is not None:
+        data["count"] = profile.count
+    if profile.corrupt is not None:
+        data["corrupt"] = profile.corrupt
+    with open(profile_path, "w") as f:
+        yaml.dump(data, f, default_flow_style=False)
+    return profile_path

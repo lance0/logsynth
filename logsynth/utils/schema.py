@@ -18,6 +18,8 @@ class FieldConfig:
     name: str
     type: str
     config: dict[str, Any]
+    when: str | None = None
+    depends_on: list[str] | None = None
 
 
 @dataclass
@@ -45,7 +47,20 @@ class ValidationError(Exception):
         super().__init__(message)
 
 
-VALID_FORMATS = {"plain", "json", "logfmt"}
+VALID_FORMATS = {"plain", "jinja", "json", "logfmt"}
+
+
+def _parse_field_dependencies(when_expr: str | None) -> list[str]:
+    """Extract field names referenced in a 'when' expression."""
+    if not when_expr:
+        return []
+    import re
+
+    # Extract identifiers that could be field references
+    # Exclude Python keywords and common literals
+    excluded = {"True", "False", "None", "and", "or", "not", "in", "is"}
+    identifiers = set(re.findall(r"\b([a-zA-Z_]\w*)\b", when_expr))
+    return sorted(identifiers - excluded)
 
 
 def validate_template(data: dict[str, Any]) -> list[str]:
@@ -93,10 +108,21 @@ def validate_template(data: dict[str, Any]) -> list[str]:
     # Validate pattern references fields
     pattern = data.get("pattern", "")
     if isinstance(data.get("fields"), dict) and pattern:
-        # Check for $field or ${field} references
+        # Check for $field, ${field}, and Jinja2 {{ field }} references
         import re
 
-        field_refs = set(re.findall(r"\$\{?(\w+)\}?", pattern))
+        field_refs: set[str] = set()
+
+        # $field and ${field} style
+        field_refs.update(re.findall(r"\$\{?(\w+)\}?", pattern))
+
+        # Jinja2 {{ field }} style (simple variable references)
+        field_refs.update(re.findall(r"\{\{\s*(\w+)\s*[|}\s]", pattern))
+
+        # Jinja2 {% if field %} conditions
+        field_refs.update(re.findall(r"\{%\s*(?:if|elif|for)\s+(\w+)\s*[=!<>%\s]", pattern))
+        field_refs.update(re.findall(r"\{%\s*(?:if|elif)\s+(\w+)\s*%}", pattern))
+
         defined_fields = set(data["fields"].keys())
 
         undefined = field_refs - defined_fields
@@ -131,10 +157,13 @@ def load_template(source: str | Path) -> Template:
     # Build Template object
     fields = {}
     for field_name, field_config in data["fields"].items():
+        when_expr = field_config.get("when")
         fields[field_name] = FieldConfig(
             name=field_name,
             type=field_config["type"],
             config=field_config,
+            when=when_expr,
+            depends_on=_parse_field_dependencies(when_expr),
         )
 
     return Template(

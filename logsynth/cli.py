@@ -11,11 +11,19 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 
 from logsynth import __version__
-from logsynth.config import PRESETS_DIR, get_defaults
+from logsynth.config import (
+    PRESETS_DIR,
+    PROFILES_DIR,
+    ProfileConfig,
+    get_defaults,
+    list_profiles,
+    load_profile,
+    save_profile,
+)
 from logsynth.core.corruptor import create_corruptor
 from logsynth.core.generator import create_generator, get_preset_path, list_presets
 from logsynth.core.output import create_sink
-from logsynth.core.parallel import run_parallel_streams
+from logsynth.core.parallel import StreamConfig, parse_stream_config, run_parallel_streams
 from logsynth.core.rate_control import (
     RateController,
     parse_burst_pattern,
@@ -32,6 +40,8 @@ app = typer.Typer(
 )
 presets_app = typer.Typer(help="Manage preset templates.")
 app.add_typer(presets_app, name="presets")
+profiles_app = typer.Typer(help="Manage configuration profiles.")
+app.add_typer(profiles_app, name="profiles")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -111,9 +121,9 @@ def run(
         typer.Option("--output", "-o", help="Output: file path, tcp://host:port, udp://host:port"),
     ] = None,
     corrupt: Annotated[
-        float,
+        Optional[float],
         typer.Option("--corrupt", help="Corruption percentage (0-100)"),
-    ] = 0.0,
+    ] = None,
     seed: Annotated[
         Optional[int],
         typer.Option("--seed", "-s", help="Random seed for reproducibility"),
@@ -130,18 +140,55 @@ def run(
         bool,
         typer.Option("--preview", "-p", help="Show sample line and exit"),
     ] = False,
+    profile: Annotated[
+        Optional[str],
+        typer.Option("--profile", "-P", help="Configuration profile name"),
+    ] = None,
+    stream: Annotated[
+        Optional[list[str]],
+        typer.Option("--stream", "-S", help="Per-stream config: name:rate=X,format=Y"),
+    ] = None,
 ) -> None:
     """Generate synthetic logs from templates."""
-    # Get defaults
+    # Get defaults and load profile if specified
     defaults = get_defaults()
-    actual_rate = rate if rate is not None else defaults.rate
+    profile_config: ProfileConfig | None = None
+    if profile:
+        profile_config = load_profile(profile)
+        if not profile_config:
+            available = ", ".join(list_profiles()) if list_profiles() else "none"
+            err_console.print(f"[red]Error:[/red] Unknown profile '{profile}'. Available: {available}")
+            raise typer.Exit(1)
+
+    # Apply precedence: defaults < profile < CLI args
+    def resolve(cli_val: any, profile_attr: str, default_val: any) -> any:
+        """Resolve value with precedence: CLI > profile > defaults."""
+        if cli_val is not None:
+            return cli_val
+        if profile_config and getattr(profile_config, profile_attr, None) is not None:
+            return getattr(profile_config, profile_attr)
+        return default_val
+
+    actual_rate = resolve(rate, "rate", defaults.rate)
+    actual_output = resolve(output, "output", None)
+    actual_duration = resolve(duration, "duration", None)
+    actual_count = resolve(count, "count", None)
+    actual_corrupt = resolve(corrupt, "corrupt", 0.0)
+    actual_format = resolve(format_override, "format", None)
 
     # Resolve template sources
     sources = _resolve_template_source(templates, template)
 
+    # Parse stream configs if provided
+    stream_configs: dict[str, StreamConfig] = {}
+    if stream:
+        for spec in stream:
+            cfg = parse_stream_config(spec)
+            stream_configs[cfg.name] = cfg
+
     # Handle parallel streams (multiple templates)
     if len(sources) > 1:
-        sink = create_sink(output)
+        sink = create_sink(actual_output)
         try:
             if burst:
                 err_console.print("[red]Error:[/red] --burst not supported with parallel streams")
@@ -151,10 +198,11 @@ def run(
                 sources=sources,
                 sink=sink,
                 rate=actual_rate,
-                duration=duration,
-                count=count or (1000 if not duration else None),
-                format_override=format_override,
+                duration=actual_duration,
+                count=actual_count or (1000 if not actual_duration else None),
+                format_override=actual_format,
                 seed=seed,
+                stream_configs=stream_configs if stream_configs else None,
             )
 
             total = sum(results.values())
@@ -171,7 +219,7 @@ def run(
     source = sources[0]
 
     try:
-        generator = create_generator(source, format_override, seed)
+        generator = create_generator(source, actual_format, seed)
     except FileNotFoundError as e:
         err_console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
@@ -187,10 +235,10 @@ def run(
         raise typer.Exit()
 
     # Create corruptor if needed
-    corruptor = create_corruptor(corrupt)
+    corruptor = create_corruptor(actual_corrupt)
 
     # Create output sink
-    sink = create_sink(output)
+    sink = create_sink(actual_output)
 
     # Create generate function (with optional corruption)
     def generate() -> str:
@@ -206,15 +254,15 @@ def run(
     try:
         # Determine run mode
         if burst:
-            if not duration:
+            if not actual_duration:
                 err_console.print("[red]Error:[/red] --burst requires --duration")
                 raise typer.Exit(1)
             segments = parse_burst_pattern(burst)
-            emitted = run_with_burst(segments, duration, generate, write)
-        elif duration:
-            emitted = run_with_duration(actual_rate, duration, generate, write)
-        elif count:
-            emitted = run_with_count(actual_rate, count, generate, write)
+            emitted = run_with_burst(segments, actual_duration, generate, write)
+        elif actual_duration:
+            emitted = run_with_duration(actual_rate, actual_duration, generate, write)
+        elif actual_count:
+            emitted = run_with_count(actual_rate, actual_count, generate, write)
         else:
             # Default: run indefinitely until Ctrl+C (using large duration)
             emitted = run_with_duration(actual_rate, "24h", generate, write)
@@ -375,6 +423,81 @@ def presets_show(
 
     syntax = Syntax(content, "yaml", theme="monokai", line_numbers=True)
     console.print(Panel(syntax, title=f"Preset: {name}"))
+
+
+# Profiles subcommands
+@profiles_app.command("list")
+def profiles_list_cmd() -> None:
+    """List available configuration profiles."""
+    profiles = list_profiles()
+
+    if not profiles:
+        console.print("[yellow]No profiles available[/yellow]")
+        console.print(f"[dim]Create profiles in: {PROFILES_DIR}[/dim]")
+        raise typer.Exit()
+
+    console.print("[bold]Available Profiles:[/bold]")
+    for name in profiles:
+        profile_cfg = load_profile(name)
+        if profile_cfg:
+            attrs = []
+            if profile_cfg.rate is not None:
+                attrs.append(f"rate={profile_cfg.rate}")
+            if profile_cfg.format is not None:
+                attrs.append(f"format={profile_cfg.format}")
+            if profile_cfg.duration is not None:
+                attrs.append(f"duration={profile_cfg.duration}")
+            if profile_cfg.count is not None:
+                attrs.append(f"count={profile_cfg.count}")
+            if profile_cfg.output is not None:
+                attrs.append(f"output={profile_cfg.output}")
+            if profile_cfg.corrupt is not None:
+                attrs.append(f"corrupt={profile_cfg.corrupt}")
+            attrs_str = ", ".join(attrs) if attrs else "empty"
+            console.print(f"  [cyan]{name}[/cyan] - {attrs_str}")
+
+
+@profiles_app.command("show")
+def profiles_show(
+    name: Annotated[str, typer.Argument(help="Profile name")],
+) -> None:
+    """Show contents of a configuration profile."""
+    profile_path = PROFILES_DIR / f"{name}.yaml"
+
+    if not profile_path.exists():
+        available = ", ".join(list_profiles()) if list_profiles() else "none"
+        err_console.print(f"[red]Error:[/red] Unknown profile '{name}'. Available: {available}")
+        raise typer.Exit(1)
+
+    with open(profile_path) as f:
+        content = f.read()
+
+    syntax = Syntax(content, "yaml", theme="monokai", line_numbers=True)
+    console.print(Panel(syntax, title=f"Profile: {name}"))
+
+
+@profiles_app.command("create")
+def profiles_create(
+    name: Annotated[str, typer.Argument(help="Profile name")],
+    rate: Annotated[Optional[float], typer.Option("--rate", "-r", help="Lines per second")] = None,
+    format_val: Annotated[Optional[str], typer.Option("--format", "-f", help="Output format")] = None,
+    output: Annotated[Optional[str], typer.Option("--output", "-o", help="Output destination")] = None,
+    duration: Annotated[Optional[str], typer.Option("--duration", "-d", help="Duration")] = None,
+    count: Annotated[Optional[int], typer.Option("--count", "-c", help="Line count")] = None,
+    corrupt: Annotated[Optional[float], typer.Option("--corrupt", help="Corruption %")] = None,
+) -> None:
+    """Create a new configuration profile."""
+    profile = ProfileConfig(
+        name=name,
+        rate=rate,
+        format=format_val,
+        output=output,
+        duration=duration,
+        count=count,
+        corrupt=corrupt,
+    )
+    path = save_profile(profile)
+    console.print(f"[green]✓[/green] Profile '{name}' saved to: {path}")
 
 
 if __name__ == "__main__":

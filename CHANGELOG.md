@@ -2,6 +2,38 @@
 
 All notable changes to LogSynth will be documented in this file.
 
+## [0.2.0] - 2025-12-05
+
+### Added
+- **Configuration profiles**: Named sets of defaults stored in `~/.config/logsynth/profiles/`
+  - `logsynth profiles list` - List available profiles
+  - `logsynth profiles show <name>` - Show profile contents
+  - `logsynth profiles create <name> --rate X --format Y` - Create profiles
+  - `logsynth run nginx --profile high-volume` - Use profiles
+- **Plugin system**: Custom field types from `~/.config/logsynth/plugins/`
+  - Load Python files with `@register("type")` decorated generators
+  - Plugins loaded automatically on startup
+- **Jinja2 templating**: Use `{{ field }}` and `{% if %}` syntax in patterns
+  - Auto-detection: plain `$field` or Jinja2 `{{ field }}` syntax
+  - Supports conditionals, loops, and filters
+- **Conditional field generation**: `when:` clause for fields
+  - Example: `when: "level == 'ERROR'"` - field only generated when condition is true
+  - Automatic dependency ordering via topological sort
+- **Per-stream rate syntax**: Different rates for parallel streams
+  - `--stream nginx:rate=50 --stream redis:rate=10`
+  - Per-stream format override: `--stream nginx:format=json`
+
+## [0.1.1] - 2025-12-05
+
+### Added
+- 16 new preset templates:
+  - Web servers: apache, nginx-error, haproxy
+  - Databases: postgres, mysql, mongodb
+  - Infrastructure: kubernetes, docker, terraform
+  - Security: auth, sshd, firewall, audit
+  - Applications: java, python, nodejs
+- Total presets now: 19
+
 ## [0.1.0] - 2025-12-05
 
 ### Added

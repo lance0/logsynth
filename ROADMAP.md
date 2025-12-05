@@ -11,7 +11,7 @@
 - [x] Parallel streams
 - [x] Burst patterns
 
-## v0.1.1 (Current)
+## v0.1.1
 - [x] Additional presets (19 total)
   - Web servers: apache, nginx-error, haproxy
   - Databases: postgres, mysql, mongodb
@@ -19,12 +19,12 @@
   - Security: auth, sshd, firewall, audit
   - Applications: java, python, nodejs
 
-## v0.2.0 (In Progress)
-- [ ] Per-stream rate syntax (`--stream nginx:rate=10`)
-- [ ] Jinja2 templating for complex patterns
-- [ ] Conditional field generation
-- [ ] Plugin system for custom field types
-- [ ] Configuration profiles
+## v0.2.0 (Current)
+- [x] Per-stream rate syntax (`--stream nginx:rate=10`)
+- [x] Jinja2 templating for complex patterns
+- [x] Conditional field generation (`when:` clause)
+- [x] Plugin system for custom field types
+- [x] Configuration profiles (`--profile`)
 
 ## v0.3.0 (Future)
 - [ ] TUI dashboard with live stats

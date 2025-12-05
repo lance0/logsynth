@@ -37,12 +37,74 @@ class LogGenerator:
                 field_config.config,
             )
 
+        # Compute field generation order based on dependencies
+        self._field_order = self._compute_field_order()
+
+    def _compute_field_order(self) -> list[str]:
+        """Compute field generation order based on 'when' dependencies.
+
+        Uses topological sort to ensure dependent fields are generated first.
+        """
+        # Build dependency graph
+        order: list[str] = []
+        visited: set[str] = set()
+        temp_mark: set[str] = set()
+
+        def visit(name: str) -> None:
+            if name in visited:
+                return
+            if name in temp_mark:
+                # Circular dependency - just proceed
+                return
+
+            temp_mark.add(name)
+            field_config = self.template.fields.get(name)
+            if field_config and field_config.depends_on:
+                for dep in field_config.depends_on:
+                    if dep in self.template.fields:
+                        visit(dep)
+            temp_mark.discard(name)
+            visited.add(name)
+            order.append(name)
+
+        for name in self.template.fields:
+            visit(name)
+
+        return order
+
+    def _evaluate_condition(self, when_expr: str, values: dict[str, Any]) -> bool:
+        """Evaluate a 'when' condition expression safely.
+
+        Supports simple comparisons like:
+        - level == 'ERROR'
+        - code >= 400
+        - level in ['ERROR', 'WARN']
+        """
+        try:
+            # Restricted eval with no builtins, only field values
+            allowed = {"True": True, "False": False, "None": None}
+            allowed.update(values)
+            return bool(eval(when_expr, {"__builtins__": {}}, allowed))
+        except Exception:
+            # If evaluation fails, treat condition as false
+            return False
+
     def generate(self) -> str:
         """Generate a single log line."""
-        # Generate values for all fields
+        # Generate values for all fields in dependency order
         values: dict[str, Any] = {}
-        for field_name, generator in self.field_generators.items():
-            values[field_name] = generator.generate()
+        for field_name in self._field_order:
+            field_config = self.template.fields[field_name]
+
+            # Check condition if present
+            if field_config.when:
+                if not self._evaluate_condition(field_config.when, values):
+                    # Condition not met - use empty string
+                    values[field_name] = ""
+                    continue
+
+            # Generate value
+            values[field_name] = self.field_generators[field_name].generate()
 
         # Format the log line
         return self.formatter.format(self.template.pattern, values)

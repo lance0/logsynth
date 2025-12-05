@@ -7,6 +7,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
+from jinja2 import Environment, BaseLoader
+
 
 class Formatter(ABC):
     """Abstract base class for output formatters."""
@@ -17,8 +19,13 @@ class Formatter(ABC):
         pass
 
 
-class PlainFormatter(Formatter):
-    """Format logs using pattern substitution."""
+def _is_jinja_pattern(pattern: str) -> bool:
+    """Detect if pattern uses Jinja2 syntax."""
+    return "{{" in pattern or "{%" in pattern
+
+
+class SimpleSubstitutionFormatter(Formatter):
+    """Format logs using simple $field pattern substitution."""
 
     def format(self, pattern: str, values: dict[str, Any]) -> str:
         """Substitute $field and ${field} placeholders in pattern."""
@@ -33,6 +40,40 @@ class PlainFormatter(Formatter):
             result = re.sub(rf"\${field}(?!\w)", str(value), result)
 
         return result.strip()
+
+
+class JinjaFormatter(Formatter):
+    """Format logs using Jinja2 templating."""
+
+    def __init__(self) -> None:
+        self.env = Environment(
+            loader=BaseLoader(),
+            autoescape=False,
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        self._cache: dict[str, Any] = {}
+
+    def format(self, pattern: str, values: dict[str, Any]) -> str:
+        """Render pattern as Jinja2 template with values as context."""
+        if pattern not in self._cache:
+            self._cache[pattern] = self.env.from_string(pattern)
+        template = self._cache[pattern]
+        return template.render(**values).strip()
+
+
+class PlainFormatter(Formatter):
+    """Format logs with auto-detection of Jinja2 vs simple substitution."""
+
+    def __init__(self) -> None:
+        self._simple = SimpleSubstitutionFormatter()
+        self._jinja = JinjaFormatter()
+
+    def format(self, pattern: str, values: dict[str, Any]) -> str:
+        """Auto-detect pattern type and format accordingly."""
+        if _is_jinja_pattern(pattern):
+            return self._jinja.format(pattern, values)
+        return self._simple.format(pattern, values)
 
 
 class JsonFormatter(Formatter):
@@ -70,6 +111,7 @@ def get_formatter(format_name: str) -> Formatter:
     """Get a formatter instance by name."""
     formatters = {
         "plain": PlainFormatter,
+        "jinja": JinjaFormatter,
         "json": JsonFormatter,
         "logfmt": LogfmtFormatter,
     }
