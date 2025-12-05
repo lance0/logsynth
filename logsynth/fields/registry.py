@@ -5,8 +5,9 @@ from __future__ import annotations
 import importlib.util
 import sys
 import warnings
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from logsynth.fields.types import FieldGenerator

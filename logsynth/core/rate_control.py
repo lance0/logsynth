@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 import signal
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 # Shutdown flag for graceful exit
 _shutdown_requested = False

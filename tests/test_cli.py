@@ -2,15 +2,11 @@
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from logsynth.cli import app
 from logsynth.config import PROFILES_DIR
-
 
 runner = CliRunner()
 

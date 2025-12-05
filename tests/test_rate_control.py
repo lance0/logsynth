@@ -5,11 +5,10 @@ import time
 import pytest
 
 from logsynth.core.rate_control import (
-    parse_duration,
     parse_burst_pattern,
+    parse_duration,
     run_with_count,
     run_with_duration,
-    BurstSegment,
 )
 
 

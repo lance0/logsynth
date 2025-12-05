@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
 
 from logsynth.core.generator import LogGenerator, create_generator
 from logsynth.core.output import Sink
 from logsynth.core.rate_control import run_with_count, run_with_duration
-
 
 GenerateFn = Callable[[], str]
 WriteFn = Callable[[str], None]

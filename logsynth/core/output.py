@@ -25,7 +25,7 @@ class Sink(ABC):
         """Close the sink and release resources."""
         pass
 
-    def __enter__(self) -> "Sink":
+    def __enter__(self) -> Sink:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:

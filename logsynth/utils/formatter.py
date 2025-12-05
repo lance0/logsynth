@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 
 
 class Formatter(ABC):

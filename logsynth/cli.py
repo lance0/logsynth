@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -12,7 +12,6 @@ from rich.syntax import Syntax
 
 from logsynth import __version__
 from logsynth.config import (
-    PRESETS_DIR,
     PROFILES_DIR,
     ProfileConfig,
     get_defaults,
@@ -25,7 +24,6 @@ from logsynth.core.generator import create_generator, get_preset_path, list_pres
 from logsynth.core.output import create_sink
 from logsynth.core.parallel import StreamConfig, parse_stream_config, run_parallel_streams
 from logsynth.core.rate_control import (
-    RateController,
     parse_burst_pattern,
     run_with_burst,
     run_with_count,
@@ -57,7 +55,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", "-V", callback=version_callback, is_eager=True),
     ] = None,
 ) -> None:
@@ -88,7 +86,9 @@ def _resolve_template_source(
                 sources.append(t)
 
     if not sources:
-        err_console.print("[red]Error:[/red] No template specified. Use a preset name or --template")
+        err_console.print(
+            "[red]Error:[/red] No template specified. Use a preset name or --template"
+        )
         raise typer.Exit(1)
 
     return sources
@@ -97,43 +97,43 @@ def _resolve_template_source(
 @app.command()
 def run(
     templates: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Argument(help="Preset name(s) or template file path(s)"),
     ] = None,
     template: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--template", "-t", help="Path to template YAML file"),
     ] = None,
     rate: Annotated[
-        Optional[float],
+        float | None,
         typer.Option("--rate", "-r", help="Lines per second"),
     ] = None,
     duration: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--duration", "-d", help="Duration (e.g., 30s, 5m, 1h)"),
     ] = None,
     count: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--count", "-c", help="Number of lines to generate"),
     ] = None,
     output: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--output", "-o", help="Output: file path, tcp://host:port, udp://host:port"),
     ] = None,
     corrupt: Annotated[
-        Optional[float],
+        float | None,
         typer.Option("--corrupt", help="Corruption percentage (0-100)"),
     ] = None,
     seed: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--seed", "-s", help="Random seed for reproducibility"),
     ] = None,
     format_override: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--format", "-f", help="Output format override: plain, json, logfmt"),
     ] = None,
     burst: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--burst", "-b", help="Burst pattern (e.g., 100:5s,10:25s)"),
     ] = None,
     preview: Annotated[
@@ -141,11 +141,11 @@ def run(
         typer.Option("--preview", "-p", help="Show sample line and exit"),
     ] = False,
     profile: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--profile", "-P", help="Configuration profile name"),
     ] = None,
     stream: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option("--stream", "-S", help="Per-stream config: name:rate=X,format=Y"),
     ] = None,
 ) -> None:
@@ -157,7 +157,9 @@ def run(
         profile_config = load_profile(profile)
         if not profile_config:
             available = ", ".join(list_profiles()) if list_profiles() else "none"
-            err_console.print(f"[red]Error:[/red] Unknown profile '{profile}'. Available: {available}")
+            err_console.print(
+                f"[red]Error:[/red] Unknown profile '{profile}'. Available: {available}"
+            )
             raise typer.Exit(1)
 
     # Apply precedence: defaults < profile < CLI args
@@ -302,15 +304,15 @@ def validate(
 def prompt(
     description: Annotated[str, typer.Argument(help="Natural language description of logs")],
     rate: Annotated[
-        Optional[float],
+        float | None,
         typer.Option("--rate", "-r", help="Lines per second"),
     ] = None,
     duration: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--duration", "-d", help="Duration (e.g., 30s, 5m, 1h)"),
     ] = None,
     count: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--count", "-c", help="Number of lines to generate"),
     ] = None,
     save_only: Annotated[
@@ -322,7 +324,7 @@ def prompt(
         typer.Option("--edit", "-e", help="Open generated template in $EDITOR"),
     ] = False,
     output: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--output", "-o", help="Output destination"),
     ] = None,
 ) -> None:
@@ -403,7 +405,8 @@ def presets_list() -> None:
         preset_path = get_preset_path(name)
         if preset_path:
             template = load_template(preset_path)
-            console.print(f"  [cyan]{name}[/cyan] - {template.format} format, {len(template.fields)} fields")
+            info = f"{template.format} format, {len(template.fields)} fields"
+            console.print(f"  [cyan]{name}[/cyan] - {info}")
 
 
 @presets_app.command("show")
@@ -479,12 +482,12 @@ def profiles_show(
 @profiles_app.command("create")
 def profiles_create(
     name: Annotated[str, typer.Argument(help="Profile name")],
-    rate: Annotated[Optional[float], typer.Option("--rate", "-r", help="Lines per second")] = None,
-    format_val: Annotated[Optional[str], typer.Option("--format", "-f", help="Output format")] = None,
-    output: Annotated[Optional[str], typer.Option("--output", "-o", help="Output destination")] = None,
-    duration: Annotated[Optional[str], typer.Option("--duration", "-d", help="Duration")] = None,
-    count: Annotated[Optional[int], typer.Option("--count", "-c", help="Line count")] = None,
-    corrupt: Annotated[Optional[float], typer.Option("--corrupt", help="Corruption %")] = None,
+    rate: Annotated[float | None, typer.Option("--rate", "-r", help="Lines per second")] = None,
+    format_val: Annotated[str | None, typer.Option("--format", "-f", help="Output format")] = None,
+    output: Annotated[str | None, typer.Option("--output", "-o", help="Output destination")] = None,
+    duration: Annotated[str | None, typer.Option("--duration", "-d", help="Duration")] = None,
+    count: Annotated[int | None, typer.Option("--count", "-c", help="Line count")] = None,
+    corrupt: Annotated[float | None, typer.Option("--corrupt", help="Corruption %")] = None,
 ) -> None:
     """Create a new configuration profile."""
     profile = ProfileConfig(

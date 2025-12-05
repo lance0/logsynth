@@ -7,7 +7,7 @@ import random
 import re
 import uuid as uuid_module
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 from logsynth.fields.registry import register
@@ -80,7 +80,7 @@ class TimestampGenerator(FieldGenerator):
     def _resolve_timezone(self, tz_name: str) -> timezone:
         """Resolve timezone name to timezone object."""
         if tz_name.upper() == "UTC":
-            return timezone.utc
+            return UTC
         if HAS_ZONEINFO:
             try:
                 zi = zoneinfo.ZoneInfo(tz_name)
@@ -97,7 +97,7 @@ class TimestampGenerator(FieldGenerator):
             minutes = int(match.group(3))
             return timezone(timedelta(hours=sign * hours, minutes=sign * minutes))
         # Default to UTC if nothing works
-        return timezone.utc
+        return UTC
 
     def _init_time(self) -> None:
         """Initialize or reset the current time."""
@@ -291,16 +291,23 @@ class IPGenerator(FieldGenerator):
             # Generate from common ranges: 10.x.x.x, 192.168.x.x, 172.16-31.x.x
             range_type = random.choice(["public", "private_10", "private_192", "private_172"])
 
+            def rand_octet() -> int:
+                return random.randint(0, 255)
+
+            def rand_host() -> int:
+                return random.randint(1, 254)
+
             if range_type == "public":
                 # Simplified public IP (avoiding 0, 127, 224-255)
-                first = random.choice([i for i in range(1, 224) if i not in (10, 127, 172, 192)])
-                return f"{first}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
+                excluded = (10, 127, 172, 192)
+                first = random.choice([i for i in range(1, 224) if i not in excluded])
+                return f"{first}.{rand_octet()}.{rand_octet()}.{rand_host()}"
             elif range_type == "private_10":
-                return f"10.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
+                return f"10.{rand_octet()}.{rand_octet()}.{rand_host()}"
             elif range_type == "private_192":
-                return f"192.168.{random.randint(0, 255)}.{random.randint(1, 254)}"
+                return f"192.168.{rand_octet()}.{rand_host()}"
             else:  # private_172
-                return f"172.{random.randint(16, 31)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
+                return f"172.{random.randint(16, 31)}.{rand_octet()}.{rand_host()}"
 
     def reset(self) -> None:
         """No state to reset."""

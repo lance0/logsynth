@@ -81,7 +81,7 @@ def generate_template(
         # Validate if requested
         if validate:
             try:
-                template = load_template(yaml_content)
+                load_template(yaml_content)  # Validates the template
             except ValidationError as e:
                 raise TemplateGenerationError(
                     f"Generated template is invalid: {e.message}\n"

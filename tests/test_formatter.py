@@ -5,9 +5,9 @@ import json
 import pytest
 
 from logsynth.utils.formatter import (
-    PlainFormatter,
     JsonFormatter,
     LogfmtFormatter,
+    PlainFormatter,
     get_formatter,
 )
 

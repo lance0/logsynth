@@ -2,9 +2,8 @@
 
 import pytest
 
-from logsynth.core.generator import create_generator, list_presets, LogGenerator
-from logsynth.utils.schema import Template, load_template, ValidationError
-
+from logsynth.core.generator import create_generator, list_presets
+from logsynth.utils.schema import ValidationError, load_template
 
 SIMPLE_TEMPLATE = """
 name: test

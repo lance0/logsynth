@@ -7,12 +7,12 @@ import pytest
 from logsynth.core.corruptor import (
     Corruptor,
     create_corruptor,
-    list_corruptions,
-    truncate,
     garbage_timestamp,
+    list_corruptions,
     missing_field,
     null_byte,
     swap_types,
+    truncate,
 )
 
 
