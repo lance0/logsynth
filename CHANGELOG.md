@@ -2,6 +2,17 @@
 
 All notable changes to LogSynth will be documented in this file.
 
+## [0.2.1] - 2025-12-05
+
+### Added
+- **HTTP output sink**: POST logs to HTTP/HTTPS endpoints
+  - Batching: configurable batch size and timeout
+  - Retries: exponential backoff on 5xx/429/connection errors
+  - Formats: JSON array, NDJSON, or plain text
+  - Headers: `--header` CLI option for custom headers
+  - Dead-letter: failed batches saved to JSONL file for debugging
+  - URL params: `?batch=N&timeout=T&format=json&retries=N`
+
 ## [0.2.0] - 2025-12-05
 
 ### Added

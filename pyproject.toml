@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "logsynth"
-version = "0.2.0"
+version = "0.2.1"
 description = "Flexible synthetic log generator with YAML templates, rate control, and LLM-powered template synthesis"
 readme = "README.md"
 license = "MIT"

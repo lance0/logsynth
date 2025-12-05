@@ -5,7 +5,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Generate realistic synthetic logs for testing, development, and benchmarking. Define patterns in YAML, control output rates, and stream to files, TCP, or UDP.
+Generate realistic synthetic logs for testing, development, and benchmarking. Define patterns in YAML, control output rates, and stream to files, TCP, UDP, or HTTP endpoints.
 
 ## Installation
 
@@ -48,7 +48,8 @@ logsynth run <preset> [options]
 --count, -c      Total lines to generate
 --duration, -d   Run time (30s, 5m, 1h)
 --format, -f     Output format: plain, json, logfmt
---output, -o     Destination: file path, tcp://host:port, udp://host:port
+--output, -o     Destination: file, tcp://, udp://, http://, https://
+--header, -H     HTTP header (key:value), can be repeated
 --preview, -p    Show sample output and exit
 --seed, -s       Random seed for reproducibility
 ```
@@ -159,6 +160,30 @@ Save and reuse settings:
 logsynth profiles create high-volume --rate 1000 --format json
 logsynth run nginx --profile high-volume
 ```
+
+### HTTP Output
+
+POST logs to HTTP endpoints with batching, retries, and dead-letter support:
+
+```bash
+# Basic HTTP POST
+logsynth run nginx --output http://localhost:8080/logs --count 1000
+
+# With batching config (batch=N lines, timeout=T seconds)
+logsynth run nginx --output "http://localhost:8080/logs?batch=50&timeout=10"
+
+# With custom headers
+logsynth run nginx --output http://localhost:8080/logs \
+  --header "Authorization:Bearer token" \
+  --header "X-Source:logsynth"
+
+# NDJSON format for Elasticsearch-style ingestion
+logsynth run nginx --output "http://localhost:9200/_bulk?format=ndjson"
+```
+
+URL parameters: `batch`, `timeout`, `format` (json/ndjson/text), `retries`, `dead_letter`
+
+Failed batches are written to `./logsynth-dead-letter.jsonl` for retry/debugging.
 
 ### Custom Field Plugins
 

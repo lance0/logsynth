@@ -148,6 +148,10 @@ def run(
         list[str] | None,
         typer.Option("--stream", "-S", help="Per-stream config: name:rate=X,format=Y"),
     ] = None,
+    header: Annotated[
+        list[str] | None,
+        typer.Option("--header", "-H", help="HTTP header (key:value)"),
+    ] = None,
 ) -> None:
     """Generate synthetic logs from templates."""
     # Get defaults and load profile if specified
@@ -188,9 +192,17 @@ def run(
             cfg = parse_stream_config(spec)
             stream_configs[cfg.name] = cfg
 
+    # Parse HTTP headers if provided
+    http_headers: dict[str, str] = {}
+    if header:
+        for h in header:
+            if ":" in h:
+                key, value = h.split(":", 1)
+                http_headers[key.strip()] = value.strip()
+
     # Handle parallel streams (multiple templates)
     if len(sources) > 1:
-        sink = create_sink(actual_output)
+        sink = create_sink(actual_output, http_headers=http_headers or None)
         try:
             if burst:
                 err_console.print("[red]Error:[/red] --burst not supported with parallel streams")
@@ -240,7 +252,7 @@ def run(
     corruptor = create_corruptor(actual_corrupt)
 
     # Create output sink
-    sink = create_sink(actual_output)
+    sink = create_sink(actual_output, http_headers=http_headers or None)
 
     # Create generate function (with optional corruption)
     def generate() -> str:
