@@ -1,5 +1,10 @@
 # LogSynth
 
+[![CI](https://github.com/lance0/logsynth/actions/workflows/ci.yml/badge.svg)](https://github.com/lance0/logsynth/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/logsynth.svg)](https://pypi.org/project/logsynth/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Generate realistic synthetic logs for testing, development, and benchmarking. Define patterns in YAML, control output rates, and stream to files, TCP, or UDP.
 
 ## Installation
