@@ -1,0 +1,60 @@
+name: api-gateway
+format: plain
+pattern: |
+  [$ts] $request_id $method $path $status $latency_ms ms $client_ip "$user_agent"
+
+fields:
+  ts:
+    type: timestamp
+    step: 50ms
+    jitter: 20ms
+    format: "%Y-%m-%dT%H:%M:%S.%fZ"
+    tz: UTC
+
+  request_id:
+    type: uuid
+
+  method:
+    type: choice
+    values: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+    weights: [0.6, 0.2, 0.08, 0.05, 0.04, 0.03]
+
+  path:
+    type: choice
+    values:
+      - /api/v1/users
+      - /api/v1/users/profile
+      - /api/v1/products
+      - /api/v1/products/search
+      - /api/v1/orders
+      - /api/v1/orders/checkout
+      - /api/v1/auth/login
+      - /api/v1/auth/refresh
+      - /api/v1/health
+      - /api/v1/metrics
+    weights: [0.15, 0.12, 0.18, 0.10, 0.12, 0.08, 0.10, 0.05, 0.05, 0.05]
+
+  status:
+    type: choice
+    values: [200, 201, 204, 400, 401, 403, 404, 429, 500, 502, 503]
+    weights: [0.70, 0.08, 0.05, 0.03, 0.03, 0.01, 0.04, 0.02, 0.02, 0.01, 0.01]
+
+  latency_ms:
+    type: int
+    min: 5
+    max: 2000
+
+  client_ip:
+    type: ip
+    cidr: 10.0.0.0/8
+
+  user_agent:
+    type: choice
+    values:
+      - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
+      - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/537.36"
+      - "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148"
+      - "PostmanRuntime/7.35.0"
+      - "python-requests/2.31.0"
+      - "curl/8.4.0"
+    weights: [0.35, 0.25, 0.20, 0.08, 0.07, 0.05]

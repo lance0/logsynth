@@ -1,0 +1,51 @@
+name: redis
+format: plain
+pattern: |
+  $pid:$role $ts $level $message
+
+fields:
+  pid:
+    type: int
+    min: 1000
+    max: 65535
+
+  role:
+    type: choice
+    values: ["M", "S", "C"]
+    weights: [0.6, 0.3, 0.1]
+
+  ts:
+    type: timestamp
+    step: 500ms
+    jitter: 100ms
+    format: "%d %b %Y %H:%M:%S.%f"
+    tz: UTC
+
+  level:
+    type: choice
+    values: [".", "-", "#", "*"]
+    weights: [0.6, 0.2, 0.15, 0.05]
+
+  message:
+    type: choice
+    values:
+      - "Accepted connection from 10.0.0.15:52341"
+      - "Accepted connection from 10.0.0.22:48892"
+      - "Client closed connection"
+      - "DB saved on disk"
+      - "Background saving started by pid 12847"
+      - "Background saving terminated with success"
+      - "RDB: 128 MB of memory used by copy-on-write"
+      - "Synchronization with replica 10.0.1.5:6379 succeeded"
+      - "Replica 10.0.1.5:6379 asks for synchronization"
+      - "MASTER <-> REPLICA sync started"
+      - "Full resync requested by replica 10.0.1.10:6379"
+      - "Loading RDB produced by version 7.2.3"
+      - "Ready to accept connections"
+      - "1 changes in 900 seconds. Saving..."
+      - "Keyspace: 15234 keys, 892 expires"
+      - "Client 42 disconnected (timeout)"
+      - "Slow log: command=KEYS duration=152 ms"
+      - "Slow log: command=SCAN duration=89 ms"
+      - "Memory limit reached, evicting keys"
+      - "AOF rewrite scheduled"

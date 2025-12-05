@@ -1,0 +1,74 @@
+name: systemd
+format: plain
+pattern: |
+  $ts $hostname $unit[$pid]: $message
+
+fields:
+  ts:
+    type: timestamp
+    step: 200ms
+    jitter: 50ms
+    format: "%b %d %H:%M:%S"
+    tz: UTC
+
+  hostname:
+    type: choice
+    values:
+      - "server-01"
+      - "server-02"
+      - "server-03"
+      - "worker-01"
+      - "worker-02"
+      - "db-primary"
+      - "db-replica"
+
+  unit:
+    type: choice
+    values:
+      - "sshd"
+      - "systemd"
+      - "kernel"
+      - "nginx"
+      - "postgresql"
+      - "docker"
+      - "containerd"
+      - "kubelet"
+      - "cron"
+      - "NetworkManager"
+      - "auditd"
+    weights: [0.15, 0.12, 0.10, 0.15, 0.10, 0.12, 0.08, 0.05, 0.05, 0.05, 0.03]
+
+  pid:
+    type: int
+    min: 1
+    max: 32768
+
+  message:
+    type: choice
+    values:
+      - "Started Session 42 of user root"
+      - "Started Session 156 of user deploy"
+      - "Accepted publickey for deploy from 10.0.0.50 port 52341 ssh2"
+      - "Accepted publickey for root from 10.0.0.1 port 48821 ssh2"
+      - "pam_unix(sshd:session): session opened for user deploy"
+      - "pam_unix(sshd:session): session closed for user deploy"
+      - "Received disconnect from 10.0.0.50 port 52341: disconnected by user"
+      - "Starting Daily apt download activities..."
+      - "Finished Daily apt download activities."
+      - "Starting Cleanup of Temporary Directories..."
+      - "Finished Cleanup of Temporary Directories."
+      - "Started Docker Application Container Engine."
+      - "Stopping Docker Application Container Engine..."
+      - "Container started: app-server-1"
+      - "Container stopped: app-server-1"
+      - "Health check passed"
+      - "Health check failed (exit code 1)"
+      - "Reloading configuration..."
+      - "Configuration reloaded successfully"
+      - "Connection refused to upstream server"
+      - "Worker process exited with code 0"
+      - "Spawning new worker process"
+      - "OOM killer invoked"
+      - "Out of memory: Killed process 12847 (java)"
+      - "EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro"
+      - "audit: type=1400 audit(1704067200.123:456): apparmor=ALLOWED"

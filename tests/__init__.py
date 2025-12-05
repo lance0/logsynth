@@ -1,0 +1,1 @@
+"""LogSynth tests."""
