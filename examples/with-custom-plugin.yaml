@@ -1,0 +1,69 @@
+# Example: Template Using Custom Plugin Fields
+# Requires the custom-plugin.py to be installed in ~/.config/logsynth/plugins/
+#
+# Setup:
+#   mkdir -p ~/.config/logsynth/plugins
+#   cp examples/custom-plugin.py ~/.config/logsynth/plugins/
+#
+# Usage: logsynth run examples/with-custom-plugin.yaml --count 10
+
+name: custom-plugin-example
+format: plain
+pattern: |
+  $ip - - [$ts] "$method $path HTTP/1.1" $status $bytes "$referer" "$useragent" request_id=$hash
+
+fields:
+  ts:
+    type: timestamp
+    format: "%d/%b/%Y:%H:%M:%S %z"
+    step: 500ms
+    jitter: 100ms
+    tz: UTC
+
+  ip:
+    type: ip
+    cidr: 10.0.0.0/8
+
+  method:
+    type: choice
+    values: [GET, POST, PUT, DELETE, PATCH]
+    weights: [0.7, 0.15, 0.08, 0.05, 0.02]
+
+  path:
+    type: choice
+    values:
+      - /api/v1/users
+      - /api/v1/products
+      - /api/v1/orders
+      - /api/v1/health
+      - /api/v1/auth/login
+      - /api/v1/search
+
+  status:
+    type: choice
+    values: [200, 201, 204, 400, 401, 403, 404, 500, 502, 503]
+    weights: [0.6, 0.1, 0.05, 0.05, 0.03, 0.02, 0.08, 0.03, 0.02, 0.02]
+
+  bytes:
+    type: int
+    min: 128
+    max: 65536
+
+  referer:
+    type: choice
+    values:
+      - "-"
+      - "https://example.com/"
+      - "https://google.com/search"
+      - "https://app.example.com/dashboard"
+
+  # Custom field type from plugin
+  useragent:
+    type: useragent
+    ua_type: mixed  # desktop, mobile, bot, or mixed
+
+  # Custom field type from plugin
+  hash:
+    type: hash
+    algorithm: sha256
+    length: 12

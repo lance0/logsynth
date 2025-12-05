@@ -1,0 +1,49 @@
+# Example: Jinja2 Templating with Conditionals
+# This template demonstrates advanced Jinja2 features for log generation
+#
+# Usage: logsynth run examples/jinja2-conditional.yaml --count 20
+
+name: jinja2-conditional-example
+format: plain
+pattern: |
+  {% if level == "ERROR" %}🚨 ALERT {% elif level == "WARN" %}⚠️  {% endif %}[{{ ts }}] {{ level | upper }}: {{ message }}{% if error_code %} (code: {{ error_code }}){% endif %}{% if stack_trace %}
+    Stack: {{ stack_trace }}{% endif %}
+
+fields:
+  ts:
+    type: timestamp
+    format: "%Y-%m-%d %H:%M:%S"
+    step: 1s
+    jitter: 200ms
+
+  level:
+    type: choice
+    values: [INFO, WARN, ERROR, DEBUG]
+    weights: [0.5, 0.25, 0.15, 0.1]
+
+  message:
+    type: choice
+    values:
+      - "Request processed successfully"
+      - "Connection timeout after 30s"
+      - "Database query failed"
+      - "Cache miss for key"
+      - "Authentication successful"
+      - "Rate limit exceeded"
+      - "Service health check passed"
+
+  # Conditional field - only generated when level is ERROR
+  error_code:
+    type: int
+    min: 1000
+    max: 9999
+    when: "level == 'ERROR'"
+
+  # Conditional field - generated for ERROR or WARN
+  stack_trace:
+    type: choice
+    values:
+      - "at com.app.service.UserService.authenticate(UserService.java:142)"
+      - "at org.framework.http.RequestHandler.handle(RequestHandler.java:89)"
+      - "at com.app.db.ConnectionPool.acquire(ConnectionPool.java:56)"
+    when: "level in ['ERROR', 'WARN']"

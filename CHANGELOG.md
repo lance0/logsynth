@@ -22,6 +22,15 @@ All notable changes to LogSynth will be documented in this file.
 - **Per-stream rate syntax**: Different rates for parallel streams
   - `--stream nginx:rate=50 --stream redis:rate=10`
   - Per-stream format override: `--stream nginx:format=json`
+- **Docker support**: Multi-stage Dockerfile for minimal image size
+  - `docker build -t logsynth .`
+  - `docker run --rm logsynth run nginx --count 100`
+- **Example templates**: Comprehensive examples in `examples/` directory
+  - Jinja2 conditional templates
+  - Custom plugin examples
+  - Profile configurations
+  - Per-stream rate scripts
+- **CLI integration tests**: 24 new tests for CLI commands (106 total)
 
 ## [0.1.1] - 2025-12-05
 

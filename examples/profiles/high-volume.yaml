@@ -1,0 +1,9 @@
+# Example Profile: High Volume Testing
+# Copy to ~/.config/logsynth/profiles/high-volume.yaml
+# Or create via CLI: logsynth profiles create high-volume --rate 1000 --format json --count 100000
+#
+# Usage: logsynth run nginx --profile high-volume
+
+rate: 1000
+format: json
+count: 100000

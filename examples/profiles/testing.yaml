@@ -1,0 +1,9 @@
+# Example Profile: Testing with Corruption
+# Copy to ~/.config/logsynth/profiles/testing.yaml
+#
+# Usage: logsynth run nginx --profile testing
+
+rate: 50
+format: json
+count: 1000
+corrupt: 5  # 5% malformed logs for testing error handling

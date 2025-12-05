@@ -25,12 +25,14 @@
 - [x] Conditional field generation (`when:` clause)
 - [x] Plugin system for custom field types
 - [x] Configuration profiles (`--profile`)
+- [x] Docker image with multi-stage build
+- [x] Example templates and profiles
+- [x] CLI integration tests (106 total tests)
 
 ## v0.3.0 (Future)
 - [ ] TUI dashboard with live stats
 - [ ] Replay mode (from existing logs)
 - [ ] Log file watching and augmentation
-- [ ] Docker image
 - [ ] HTTP output sink with batching
 
 ## v1.0.0 (Future)

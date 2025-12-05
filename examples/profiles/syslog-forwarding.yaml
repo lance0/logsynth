@@ -1,0 +1,9 @@
+# Example Profile: Syslog Forwarding
+# Copy to ~/.config/logsynth/profiles/syslog-forwarding.yaml
+#
+# Usage: logsynth run systemd --profile syslog-forwarding
+
+rate: 100
+format: plain
+output: udp://localhost:514
+duration: 1h

@@ -11,7 +11,7 @@ pip install logsynth
 Or from source:
 
 ```bash
-git clone https://github.com/yourname/logsynth.git
+git clone https://github.com/lance0/logsynth.git
 cd logsynth
 pip install -e .
 ```
@@ -30,6 +30,12 @@ logsynth run nginx --preview
 
 # Use JSON output format
 logsynth run nginx --count 10 --format json
+
+# Use a configuration profile
+logsynth run nginx --profile high-volume
+
+# Run parallel streams with per-stream rates
+logsynth run nginx redis --stream nginx:rate=50 --stream redis:rate=10 --duration 30s
 ```
 
 ## Features
@@ -37,13 +43,16 @@ logsynth run nginx --count 10 --format json
 - **YAML-driven templates** - Define log patterns with field placeholders
 - **Multiple field types** - timestamp, choice, int, float, string, uuid, ip, sequence, literal
 - **Rate control** - Duration or count-based emission with fractional rates
-- **Multiple formats** - Plain text, JSON, or logfmt output
+- **Multiple formats** - Plain text, JSON, logfmt, or Jinja2 templating
 - **Corruption injection** - Introduce malformed logs for testing error handling
 - **Output sinks** - stdout, files, TCP, or UDP
-- **LLM template generation** - Generate templates from natural language descriptions
+- **LLM template generation** - Generate templates from natural language (optional)
 - **Built-in presets** - 19 presets for web servers, databases, infrastructure, security, and applications
-- **Parallel streams** - Run multiple templates concurrently
+- **Parallel streams** - Run multiple templates concurrently with per-stream rates
 - **Burst patterns** - Simulate high/low traffic patterns
+- **Configuration profiles** - Named sets of defaults for different scenarios
+- **Plugin system** - Extend with custom field types
+- **Conditional fields** - Generate fields based on other field values
 
 ## CLI Reference
 
@@ -60,6 +69,9 @@ logsynth run --template my-template.yaml [options]
 
 # Parallel streams (multiple presets)
 logsynth run nginx redis --rate 20 --duration 1m
+
+# Per-stream rate configuration
+logsynth run nginx redis --stream nginx:rate=50 --stream redis:rate=10 --duration 30s
 ```
 
 Options:
@@ -67,11 +79,13 @@ Options:
 - `--duration`, `-d` - Run duration (e.g., 30s, 5m, 1h)
 - `--count`, `-c` - Number of lines to generate
 - `--output`, `-o` - Output destination (file, tcp://host:port, udp://host:port)
-- `--format`, `-f` - Output format override (plain, json, logfmt)
+- `--format`, `-f` - Output format override (plain, jinja, json, logfmt)
 - `--corrupt` - Corruption percentage (0-100)
 - `--seed`, `-s` - Random seed for reproducibility
 - `--burst`, `-b` - Burst pattern (e.g., 100:5s,10:25s)
 - `--preview`, `-p` - Show sample line and exit
+- `--profile`, `-P` - Configuration profile name
+- `--stream`, `-S` - Per-stream config (e.g., nginx:rate=50,format=json)
 
 ### Preset Commands
 
@@ -83,6 +97,26 @@ logsynth presets list
 logsynth presets show nginx
 ```
 
+Available presets:
+- **Web servers**: nginx, apache, nginx-error, haproxy
+- **Databases**: redis, postgres, mysql, mongodb
+- **Infrastructure**: systemd, kubernetes, docker, terraform
+- **Security**: auth, sshd, firewall, audit
+- **Applications**: java, python, nodejs
+
+### Profile Commands
+
+```bash
+# List available profiles
+logsynth profiles list
+
+# Show profile contents
+logsynth profiles show high-volume
+
+# Create a new profile
+logsynth profiles create high-volume --rate 100 --format json --count 10000
+```
+
 ### Validate Command
 
 ```bash
@@ -92,7 +126,7 @@ logsynth validate my-template.yaml
 
 ### Prompt Command (LLM)
 
-Generate templates from natural language:
+Generate templates from natural language (requires LLM configuration):
 
 ```bash
 # Generate and run immediately
@@ -105,13 +139,44 @@ logsynth prompt "database connection timeout errors" --save-only
 logsynth prompt "kubernetes pod lifecycle events" --edit
 ```
 
+## Configuration Profiles
+
+Profiles are named sets of defaults stored in `~/.config/logsynth/profiles/`.
+
+### Creating Profiles
+
+```bash
+# Create via CLI
+logsynth profiles create high-volume --rate 1000 --format json
+
+# Or create manually
+cat > ~/.config/logsynth/profiles/testing.yaml << 'EOF'
+rate: 50
+format: json
+count: 1000
+corrupt: 5
+EOF
+```
+
+### Using Profiles
+
+```bash
+# Apply profile settings
+logsynth run nginx --profile high-volume
+
+# CLI args override profile settings
+logsynth run nginx --profile high-volume --rate 500
+```
+
+Profile precedence: defaults < profile < CLI arguments
+
 ## Template Format
 
 Templates are YAML files with this structure:
 
 ```yaml
 name: my-template
-format: plain  # or json, logfmt
+format: plain  # plain, jinja, json, or logfmt
 pattern: |
   [$ts] $level $message
 
@@ -135,6 +200,70 @@ fields:
       - "Connection timeout"
       - "Authentication failed"
 ```
+
+## Jinja2 Templating
+
+For complex patterns, use Jinja2 syntax (auto-detected):
+
+```yaml
+name: alert-logs
+format: plain
+pattern: |
+  {% if level == "ERROR" %}[ALERT] {% endif %}{{ ts }} {{ level }}: {{ message }}
+  {% if error_code %}(code: {{ error_code }}){% endif %}
+
+fields:
+  ts:
+    type: timestamp
+    format: "%Y-%m-%d %H:%M:%S"
+  level:
+    type: choice
+    values: [INFO, WARN, ERROR]
+    weights: [0.6, 0.25, 0.15]
+  message:
+    type: choice
+    values: ["Request processed", "Connection timeout", "Database error"]
+  error_code:
+    type: int
+    min: 1000
+    max: 9999
+    when: "level == 'ERROR'"
+```
+
+Jinja2 features supported:
+- Variable substitution: `{{ field }}`
+- Conditionals: `{% if condition %}...{% endif %}`
+- Filters: `{{ field | upper }}`
+- Loops: `{% for item in items %}...{% endfor %}`
+
+## Conditional Field Generation
+
+Fields can be conditionally generated based on other field values:
+
+```yaml
+fields:
+  level:
+    type: choice
+    values: [INFO, WARN, ERROR]
+
+  error_code:
+    type: int
+    min: 1000
+    max: 9999
+    when: "level == 'ERROR'"  # Only generated when level is ERROR
+
+  stack_trace:
+    type: choice
+    values: ["at com.app.Main...", "at org.lib.Handler..."]
+    when: "level in ['ERROR', 'WARN']"  # Multiple conditions
+```
+
+Supported condition expressions:
+- `field == 'value'` - Equality
+- `field != 'value'` - Inequality
+- `field in ['a', 'b']` - Membership
+- `field >= 400` - Numeric comparisons
+- `field and other_field` - Logical operators
 
 ## Field Types
 
@@ -220,10 +349,91 @@ version:
   value: "1.0.0"
 ```
 
+## Plugin System
+
+Extend LogSynth with custom field types by placing Python files in `~/.config/logsynth/plugins/`.
+
+### Creating a Plugin
+
+```python
+# ~/.config/logsynth/plugins/custom_hash.py
+import hashlib
+import random
+from logsynth.fields import FieldGenerator, register
+
+class HashGenerator(FieldGenerator):
+    """Generate random hash values."""
+
+    def __init__(self, config: dict) -> None:
+        self.algorithm = config.get("algorithm", "sha256")
+        self.length = config.get("length", 16)
+
+    def generate(self) -> str:
+        data = str(random.random()).encode()
+        h = hashlib.new(self.algorithm, data)
+        return h.hexdigest()[:self.length]
+
+    def reset(self) -> None:
+        pass
+
+@register("hash")
+def create_hash_generator(config: dict) -> FieldGenerator:
+    return HashGenerator(config)
+```
+
+### Using Custom Field Types
+
+```yaml
+name: with-hash
+pattern: |
+  [$ts] request_id=$hash $message
+
+fields:
+  ts:
+    type: timestamp
+  hash:
+    type: hash  # Your custom type
+    algorithm: sha256
+    length: 12
+  message:
+    type: choice
+    values: ["Request processed", "Cache miss"]
+```
+
+## Per-Stream Rate Configuration
+
+When running multiple streams in parallel, configure each stream independently:
+
+```bash
+# Different rates per stream
+logsynth run nginx redis postgres \
+  --stream nginx:rate=100 \
+  --stream redis:rate=20 \
+  --stream postgres:rate=10 \
+  --duration 1m
+
+# Different formats per stream
+logsynth run nginx redis \
+  --stream nginx:rate=50,format=json \
+  --stream redis:rate=25,format=plain \
+  --duration 30s
+```
+
+Stream config options:
+- `rate=N` - Lines per second for this stream
+- `format=X` - Output format (plain, json, logfmt)
+- `count=N` - Line count for this stream (with --count mode)
+
 ## Output Formats
 
 ### Plain (default)
-Uses pattern substitution:
+Uses pattern substitution with `$field` or `${field}`:
+```
+[2025-01-15 10:30:00] INFO Request processed successfully
+```
+
+### Jinja
+Uses Jinja2 templating with `{{ field }}`:
 ```
 [2025-01-15 10:30:00] INFO Request processed successfully
 ```
@@ -283,9 +493,9 @@ Simulate traffic spikes:
 logsynth run nginx --burst 100:5s,10:25s --duration 5m
 ```
 
-## LLM Configuration
+## LLM Configuration (Optional)
 
-Configure LLM providers in `~/.config/logsynth/config.yaml`:
+The LLM feature requires additional configuration. Configure providers in `~/.config/logsynth/config.yaml`:
 
 ```yaml
 llm:
@@ -300,11 +510,29 @@ defaults:
 ```
 
 Supported providers (via OpenAI-compatible API):
-- **Ollama** - Local LLMs
-- **OpenAI** - GPT-4o, etc.
-- **Anthropic** - Via gateway
+- **Ollama** - Local LLMs (free, runs locally)
+- **OpenAI** - GPT-4o, etc. (requires API key)
+- **Anthropic** - Via OpenAI-compatible gateway
 - **vLLM** - Local inference server
 - **Vercel AI Gateway** - Multi-provider gateway
+
+**Note**: The LLM feature is optional. All other LogSynth features work without any LLM configuration.
+
+## Docker
+
+```bash
+# Build the image
+docker build -t logsynth .
+
+# Run with default settings
+docker run --rm logsynth run nginx --count 100
+
+# Run with custom template (mount volume)
+docker run --rm -v $(pwd)/templates:/templates logsynth run /templates/custom.yaml --count 100
+
+# Stream to external endpoint
+docker run --rm logsynth run nginx --duration 1h --output tcp://host.docker.internal:5514
+```
 
 ## Development
 
