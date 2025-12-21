@@ -5,6 +5,17 @@ All notable changes to LogSynth will be documented in this file.
 ## [0.3.0] - 2025-12-21
 
 ### Added
+- **Replay mode**: Replay logs with original timing patterns
+  - `logsynth replay access.log` - Replay with real timestamps
+  - `--speed N` - Playback speed multiplier (2.0 = 2x faster)
+  - `--skip-gaps N` - Skip gaps larger than N seconds
+  - Supports ISO8601, CLF (nginx/apache), syslog timestamp formats
+- **Watch mode**: Tail log files and forward to outputs
+  - `logsynth watch /var/log/app.log` - Like tail -f
+  - `--output http://...` - Forward to HTTP endpoint
+  - `--add-timestamp`, `--add-hostname`, `--add-source` - Augment lines
+  - `--wrap-json` - Wrap lines in JSON objects
+  - Handles log rotation automatically
 - **TUI dashboard**: Real-time stats display during log generation
   - `--live` / `-L` flag to enable dashboard
   - Shows elapsed time, progress bar (for count/duration targets)
@@ -28,7 +39,7 @@ All notable changes to LogSynth will be documented in this file.
   - Choice fields with auto-calculated weights
 - **Format auto-detection**: JSON, logfmt, or plain text
 - **Semantic field naming**: Detected types get meaningful names (ip, timestamp, method, level, status)
-- 66 new tests (201 total)
+- 95 new tests (230 total)
 
 ## [0.2.1] - 2025-12-05
 

@@ -123,6 +123,46 @@ Automatically detects:
 - **Identifiers**: UUIDs, hex hashes
 - **Numbers**: integers (with min/max), floats
 
+### Replay Mode
+
+Replay existing logs with original timing patterns:
+
+```bash
+# Replay at real-time speed
+logsynth replay /var/log/nginx/access.log
+
+# 10x faster playback
+logsynth replay access.log --speed 10
+
+# Skip gaps larger than 60 seconds
+logsynth replay access.log --skip-gaps 60
+
+# Replay to HTTP endpoint
+logsynth replay access.log --output http://localhost:8080/logs
+```
+
+Automatically detects timestamps in ISO8601, CLF (nginx/apache), and syslog formats.
+
+### Watch Mode
+
+Tail log files and forward to outputs (like `tail -f` with superpowers):
+
+```bash
+# Watch and print to stdout
+logsynth watch /var/log/app.log
+
+# Forward to HTTP endpoint
+logsynth watch /var/log/app.log --output http://localhost:8080/logs
+
+# Add metadata to each line
+logsynth watch app.log --add-timestamp --add-hostname --add-source
+
+# Wrap in JSON for structured logging
+logsynth watch app.log --wrap-json --output http://elasticsearch:9200/_bulk
+```
+
+Handles log rotation automatically.
+
 ### Live Dashboard
 
 Monitor log generation in real-time with the `--live` flag:

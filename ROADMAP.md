@@ -34,10 +34,10 @@
 - [x] `--header` CLI option for HTTP headers
 - [x] 135 total tests
 
-## v0.3.0 (Future)
+## v0.3.0
 - [x] TUI dashboard with live stats (`--live` flag)
-- [ ] Replay mode (from existing logs)
-- [ ] Log file watching and augmentation
+- [x] Replay mode (`logsynth replay`)
+- [x] Log file watching and augmentation (`logsynth watch`)
 - [x] Schema inference from sample logs (`logsynth infer`)
 
 ## v1.0.0 (Future)

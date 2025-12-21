@@ -592,6 +592,161 @@ def infer(
         raise typer.Exit(1)
 
 
+@app.command()
+def replay(
+    log_file: Annotated[str, typer.Argument(help="Path to log file to replay")],
+    output: Annotated[
+        str | None,
+        typer.Option("--output", "-o", help="Output destination (file, tcp://, http://)"),
+    ] = None,
+    speed: Annotated[
+        float,
+        typer.Option("--speed", "-s", help="Playback speed multiplier (1.0 = real-time)"),
+    ] = 1.0,
+    skip_gaps: Annotated[
+        float | None,
+        typer.Option("--skip-gaps", help="Skip gaps larger than N seconds"),
+    ] = 60.0,
+    max_lines: Annotated[
+        int | None,
+        typer.Option("--max-lines", "-n", help="Maximum lines to replay"),
+    ] = None,
+    header: Annotated[
+        list[str] | None,
+        typer.Option("--header", "-H", help="HTTP header (key:value)"),
+    ] = None,
+) -> None:
+    """Replay a log file with original timing patterns."""
+    from logsynth.replay import replay_file
+
+    path = Path(log_file)
+    if not path.exists():
+        err_console.print(f"[red]Error:[/red] File not found: {log_file}")
+        raise typer.Exit(1)
+
+    # Parse HTTP headers
+    http_headers: dict[str, str] = {}
+    if header:
+        for h in header:
+            if ":" in h:
+                key, value = h.split(":", 1)
+                http_headers[key.strip()] = value.strip()
+
+    sink = create_sink(output, http_headers=http_headers or None)
+
+    console.print(f"[cyan]Replaying:[/cyan] {log_file}")
+    console.print(f"  Speed: {speed}x")
+    if skip_gaps:
+        console.print(f"  Skip gaps > {skip_gaps}s")
+
+    try:
+        replayed = replay_file(
+            path=path,
+            write=sink.write,
+            speed=speed,
+            skip_gaps=skip_gaps,
+            max_lines=max_lines,
+        )
+        console.print(f"\n[green]Replayed {replayed} log lines[/green]")
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted[/yellow]")
+    finally:
+        sink.close()
+
+
+@app.command()
+def watch(
+    log_file: Annotated[str, typer.Argument(help="Path to log file to watch")],
+    output: Annotated[
+        str | None,
+        typer.Option("--output", "-o", help="Output destination (file, tcp://, http://)"),
+    ] = None,
+    from_start: Annotated[
+        bool,
+        typer.Option("--from-start", help="Start from beginning of file"),
+    ] = False,
+    add_timestamp: Annotated[
+        bool,
+        typer.Option("--add-timestamp", help="Add timestamp to each line"),
+    ] = False,
+    add_hostname: Annotated[
+        bool,
+        typer.Option("--add-hostname", help="Add hostname to each line"),
+    ] = False,
+    add_source: Annotated[
+        bool,
+        typer.Option("--add-source", help="Add source name to each line"),
+    ] = False,
+    source_name: Annotated[
+        str | None,
+        typer.Option("--source-name", help="Source name for --add-source"),
+    ] = None,
+    wrap_json: Annotated[
+        bool,
+        typer.Option("--wrap-json", help="Wrap lines in JSON object"),
+    ] = False,
+    header: Annotated[
+        list[str] | None,
+        typer.Option("--header", "-H", help="HTTP header (key:value)"),
+    ] = None,
+) -> None:
+    """Watch a log file and forward new lines (like tail -f)."""
+    from logsynth.watch import LogTailer
+    from logsynth.watch.tailer import AugmentConfig
+
+    path = Path(log_file)
+
+    # Parse HTTP headers
+    http_headers: dict[str, str] = {}
+    if header:
+        for h in header:
+            if ":" in h:
+                key, value = h.split(":", 1)
+                http_headers[key.strip()] = value.strip()
+
+    sink = create_sink(output, http_headers=http_headers or None)
+
+    # Build augment config if any augmentation is requested
+    augment = None
+    if add_timestamp or add_hostname or add_source or wrap_json:
+        augment = AugmentConfig(
+            add_timestamp=add_timestamp,
+            add_hostname=add_hostname,
+            add_source=add_source,
+            source_name=source_name or path.name,
+            wrap_json=wrap_json,
+        )
+
+    tailer = LogTailer(
+        path=path,
+        augment=augment,
+        from_end=not from_start,
+    )
+
+    console.print(f"[cyan]Watching:[/cyan] {log_file}")
+    if augment:
+        augments = []
+        if add_timestamp:
+            augments.append("timestamp")
+        if add_hostname:
+            augments.append("hostname")
+        if add_source:
+            augments.append(f"source={source_name or path.name}")
+        if wrap_json:
+            augments.append("json")
+        console.print(f"  Augment: {', '.join(augments)}")
+    console.print("[dim]Press Ctrl+C to stop[/dim]")
+
+    try:
+        forwarded = tailer.tail(write=sink.write)
+        console.print(f"\n[green]Forwarded {forwarded} log lines[/green]")
+    except KeyboardInterrupt:
+        tailer.stop()
+        console.print("\n[yellow]Stopped[/yellow]")
+    finally:
+        sink.close()
+
+
 @presets_app.command("list")
 def presets_list() -> None:
     """List available preset templates."""
