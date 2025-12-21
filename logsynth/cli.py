@@ -21,7 +21,7 @@ from logsynth.config import (
 )
 from logsynth.core.corruptor import create_corruptor
 from logsynth.core.generator import create_generator, get_preset_path, list_presets
-from logsynth.core.output import create_sink
+from logsynth.core.output import NullSink, create_sink
 from logsynth.core.parallel import StreamConfig, parse_stream_config, run_parallel_streams
 from logsynth.core.rate_control import (
     parse_burst_pattern,
@@ -207,13 +207,17 @@ def run(
 
     # Handle parallel streams (multiple templates)
     if len(sources) > 1:
-        sink = create_sink(actual_output, http_headers=http_headers or None)
-
         # Check if live dashboard should be enabled
         use_dashboard = live and actual_output is None
         if live and actual_output:
             err_console.print("[yellow]Warning:[/yellow] --live ignored when output is not stdout")
             use_dashboard = False
+
+        # Use NullSink when dashboard is active (no stdout output during live view)
+        if use_dashboard:
+            sink = NullSink()
+        else:
+            sink = create_sink(actual_output, http_headers=http_headers or None)
 
         # Set up stats collector and dashboard if needed
         stats_collector = None
@@ -304,14 +308,17 @@ def run(
     # Create corruptor if needed
     corruptor = create_corruptor(actual_corrupt)
 
-    # Create output sink
-    sink = create_sink(actual_output, http_headers=http_headers or None)
-
     # Check if live dashboard should be enabled
     use_dashboard = live and actual_output is None  # Only for stdout
     if live and actual_output:
         err_console.print("[yellow]Warning:[/yellow] --live ignored when output is not stdout")
         use_dashboard = False
+
+    # Create output sink (use NullSink when dashboard is active)
+    if use_dashboard:
+        sink = NullSink()
+    else:
+        sink = create_sink(actual_output, http_headers=http_headers or None)
 
     # Create generate function (with optional corruption)
     def generate() -> str:

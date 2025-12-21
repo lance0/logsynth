@@ -55,6 +55,18 @@ class StdoutSink(Sink):
         pass
 
 
+class NullSink(Sink):
+    """Discard all output (for use with live dashboard)."""
+
+    def write(self, line: str) -> None:
+        """Discard the line."""
+        pass
+
+    def close(self) -> None:
+        """Nothing to close."""
+        pass
+
+
 class FileSink(Sink):
     """Write logs to a file."""
 
