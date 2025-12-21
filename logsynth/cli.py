@@ -403,6 +403,93 @@ def prompt(
         raise typer.Exit(1)
 
 
+@app.command()
+def infer(
+    log_file: Annotated[str, typer.Argument(help="Path to log file to analyze")],
+    output: Annotated[
+        str | None,
+        typer.Option("--output", "-o", help="Output file for generated template"),
+    ] = None,
+    name: Annotated[
+        str | None,
+        typer.Option("--name", "-n", help="Template name"),
+    ] = None,
+    lines: Annotated[
+        int,
+        typer.Option("--lines", "-l", help="Number of lines to analyze"),
+    ] = 1000,
+    format_hint: Annotated[
+        str | None,
+        typer.Option("--format", "-f", help="Format hint: json, logfmt, plain"),
+    ] = None,
+    preview: Annotated[
+        bool,
+        typer.Option("--preview", "-p", help="Preview detected fields without full template"),
+    ] = False,
+) -> None:
+    """Infer a template schema from a sample log file."""
+    from logsynth.infer import SchemaInferrer
+
+    path = Path(log_file)
+    if not path.exists():
+        err_console.print(f"[red]Error:[/red] File not found: {log_file}")
+        raise typer.Exit(1)
+
+    try:
+        inferrer = SchemaInferrer(max_lines=lines)
+        template = inferrer.infer_from_file(path, name=name, format_hint=format_hint)
+
+        if preview:
+            # Show detected fields summary
+            console.print(f"[bold]Detected Schema:[/bold] {template['name']}")
+            console.print(f"  Format: {template['format']}")
+            console.print(f"  Fields: {len(template['fields'])}")
+            console.print()
+            for field_name, config in template["fields"].items():
+                field_type = config.get("type", "unknown")
+                extra = ""
+                if field_type == "choice":
+                    values = config.get("values", [])
+                    extra = f" ({len(values)} values)"
+                elif field_type == "int":
+                    extra = f" (min={config.get('min')}, max={config.get('max')})"
+                elif field_type == "timestamp":
+                    extra = f" (format={config.get('format', 'auto')})"
+                console.print(f"  [cyan]{field_name}[/cyan]: {field_type}{extra}")
+            raise typer.Exit()
+
+        # Generate YAML
+        import yaml
+
+        yaml_content = yaml.dump(
+            template,
+            default_flow_style=False,
+            sort_keys=False,
+            allow_unicode=True,
+            width=120,
+        )
+
+        if output:
+            output_path = Path(output)
+            output_path.write_text(yaml_content)
+            console.print(f"[green]✓[/green] Template saved to: {output_path}")
+        else:
+            syntax = Syntax(yaml_content, "yaml", theme="monokai")
+            console.print(Panel(syntax, title=f"Inferred Template: {template['name']}"))
+
+    except typer.Exit:
+        raise
+    except FileNotFoundError as e:
+        err_console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except ValueError as e:
+        err_console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        err_console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
 @presets_app.command("list")
 def presets_list() -> None:
     """List available preset templates."""

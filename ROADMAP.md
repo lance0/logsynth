@@ -38,7 +38,7 @@
 - [ ] TUI dashboard with live stats
 - [ ] Replay mode (from existing logs)
 - [ ] Log file watching and augmentation
-- [ ] Schema inference from sample logs
+- [x] Schema inference from sample logs (`logsynth infer`)
 
 ## v1.0.0 (Future)
 - [ ] Distributed workers

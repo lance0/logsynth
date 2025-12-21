@@ -2,6 +2,28 @@
 
 All notable changes to LogSynth will be documented in this file.
 
+## [0.3.0] - 2025-12-21
+
+### Added
+- **Schema inference**: Auto-generate templates from sample log files
+  - `logsynth infer sample.log` - Analyze logs and output YAML template
+  - `--output FILE` - Save template to file
+  - `--preview` - Show detected fields summary without full template
+  - `--name NAME` - Set custom template name
+  - `--lines N` - Number of lines to analyze (default: 1000)
+  - `--format` - Force format hint (json/logfmt/plain)
+- **Smart field detection**:
+  - Timestamps: ISO8601, CLF (nginx/apache), syslog, epoch
+  - Network: IPv4, IPv6 addresses
+  - Identifiers: UUIDs, hex hashes
+  - HTTP: methods, status codes, URL paths
+  - Logging: log levels (DEBUG/INFO/WARN/ERROR/etc.)
+  - Numbers: integers with min/max, floats with precision
+  - Choice fields with auto-calculated weights
+- **Format auto-detection**: JSON, logfmt, or plain text
+- **Semantic field naming**: Detected types get meaningful names (ip, timestamp, method, level, status)
+- 45 new tests for inference module (180 total)
+
 ## [0.2.1] - 2025-12-05
 
 ### Added

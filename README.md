@@ -98,6 +98,30 @@ logsynth run my-app.yaml --count 100
 
 ## Advanced Features
 
+### Schema Inference
+
+Auto-generate templates from existing log files:
+
+```bash
+# Analyze a log file and output YAML template
+logsynth infer /var/log/nginx/access.log
+
+# Save to file
+logsynth infer access.log --output nginx-template.yaml
+
+# Preview detected fields
+logsynth infer access.log --preview
+```
+
+Automatically detects:
+- **Formats**: JSON, logfmt, plain text
+- **Timestamps**: ISO8601, CLF (nginx/apache), syslog, epoch
+- **Network**: IPv4/IPv6 addresses
+- **HTTP**: methods, status codes, URL paths
+- **Logging**: log levels (DEBUG, INFO, WARN, ERROR, etc.)
+- **Identifiers**: UUIDs, hex hashes
+- **Numbers**: integers (with min/max), floats
+
 ### Parallel Streams
 
 Run multiple log types simultaneously with independent rates:
