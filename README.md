@@ -52,6 +52,7 @@ logsynth run <preset> [options]
 --header, -H     HTTP header (key:value), can be repeated
 --preview, -p    Show sample output and exit
 --seed, -s       Random seed for reproducibility
+--live, -L       Show live dashboard with real-time stats
 ```
 
 ## Custom Templates
@@ -121,6 +122,26 @@ Automatically detects:
 - **Logging**: log levels (DEBUG, INFO, WARN, ERROR, etc.)
 - **Identifiers**: UUIDs, hex hashes
 - **Numbers**: integers (with min/max), floats
+
+### Live Dashboard
+
+Monitor log generation in real-time with the `--live` flag:
+
+```bash
+# Single stream with live stats
+logsynth run nginx --rate 100 --duration 5m --live
+
+# Parallel streams with per-stream breakdown
+logsynth run nginx redis postgres --duration 5m --live
+
+# Count-based with progress bar
+logsynth run nginx --count 10000 --live
+```
+
+The dashboard shows:
+- Elapsed time and progress (for count/duration targets)
+- Per-stream emission rate, count, and errors
+- Final summary with average throughput
 
 ### Parallel Streams
 

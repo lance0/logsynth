@@ -5,6 +5,12 @@ All notable changes to LogSynth will be documented in this file.
 ## [0.3.0] - 2025-12-21
 
 ### Added
+- **TUI dashboard**: Real-time stats display during log generation
+  - `--live` / `-L` flag to enable dashboard
+  - Shows elapsed time, progress bar (for count/duration targets)
+  - Per-stream stats: rate, emitted count, errors
+  - Works with single and parallel streams
+  - Final summary with average rate
 - **Schema inference**: Auto-generate templates from sample log files
   - `logsynth infer sample.log` - Analyze logs and output YAML template
   - `--output FILE` - Save template to file
@@ -22,7 +28,7 @@ All notable changes to LogSynth will be documented in this file.
   - Choice fields with auto-calculated weights
 - **Format auto-detection**: JSON, logfmt, or plain text
 - **Semantic field naming**: Detected types get meaningful names (ip, timestamp, method, level, status)
-- 45 new tests for inference module (180 total)
+- 66 new tests (201 total)
 
 ## [0.2.1] - 2025-12-05
 

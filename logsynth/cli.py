@@ -25,6 +25,7 @@ from logsynth.core.output import create_sink
 from logsynth.core.parallel import StreamConfig, parse_stream_config, run_parallel_streams
 from logsynth.core.rate_control import (
     parse_burst_pattern,
+    parse_duration,
     run_with_burst,
     run_with_count,
     run_with_duration,
@@ -152,6 +153,10 @@ def run(
         list[str] | None,
         typer.Option("--header", "-H", help="HTTP header (key:value)"),
     ] = None,
+    live: Annotated[
+        bool,
+        typer.Option("--live", "-L", help="Show live dashboard with stats"),
+    ] = False,
 ) -> None:
     """Generate synthetic logs from templates."""
     # Get defaults and load profile if specified
@@ -203,10 +208,44 @@ def run(
     # Handle parallel streams (multiple templates)
     if len(sources) > 1:
         sink = create_sink(actual_output, http_headers=http_headers or None)
+
+        # Check if live dashboard should be enabled
+        use_dashboard = live and actual_output is None
+        if live and actual_output:
+            err_console.print("[yellow]Warning:[/yellow] --live ignored when output is not stdout")
+            use_dashboard = False
+
+        # Set up stats collector and dashboard if needed
+        stats_collector = None
+        dashboard = None
+        if use_dashboard:
+            from logsynth.tui import Dashboard, StatsCollector
+
+            target_duration_secs = None
+            if actual_duration:
+                target_duration_secs = parse_duration(actual_duration)
+
+            stats_collector = StatsCollector()
+            # Register all streams
+            for src in sources:
+                name = Path(src).stem if Path(src).exists() else src
+                stats_collector.register_stream(name)
+
+            dashboard = Dashboard(
+                stats=stats_collector,
+                target_count=actual_count,
+                target_duration=target_duration_secs,
+                console=console,
+            )
+
         try:
             if burst:
                 err_console.print("[red]Error:[/red] --burst not supported with parallel streams")
                 raise typer.Exit(1)
+
+            # Start dashboard if enabled
+            if dashboard:
+                dashboard.start()
 
             results = run_parallel_streams(
                 sources=sources,
@@ -217,14 +256,28 @@ def run(
                 format_override=actual_format,
                 seed=seed,
                 stream_configs=stream_configs if stream_configs else None,
+                stats_collector=stats_collector,
             )
 
-            total = sum(results.values())
-            console.print(f"\n[green]Emitted {total} log lines[/green]")
-            for name, emitted in results.items():
-                console.print(f"  {name}: {emitted}")
+            # Stop dashboard and print final stats
+            if dashboard:
+                if stats_collector:
+                    stats_collector.mark_done()
+                dashboard.stop()
+                dashboard.print_final_stats()
+            else:
+                total = sum(results.values())
+                console.print(f"\n[green]Emitted {total} log lines[/green]")
+                for name, emitted in results.items():
+                    console.print(f"  {name}: {emitted}")
         except KeyboardInterrupt:
-            console.print("\n[yellow]Interrupted[/yellow]")
+            if dashboard:
+                if stats_collector:
+                    stats_collector.mark_done()
+                dashboard.stop()
+                dashboard.print_final_stats()
+            else:
+                console.print("\n[yellow]Interrupted[/yellow]")
         finally:
             sink.close()
         return
@@ -254,6 +307,12 @@ def run(
     # Create output sink
     sink = create_sink(actual_output, http_headers=http_headers or None)
 
+    # Check if live dashboard should be enabled
+    use_dashboard = live and actual_output is None  # Only for stdout
+    if live and actual_output:
+        err_console.print("[yellow]Warning:[/yellow] --live ignored when output is not stdout")
+        use_dashboard = False
+
     # Create generate function (with optional corruption)
     def generate() -> str:
         line = generator.generate()
@@ -261,14 +320,44 @@ def run(
             line = corruptor.maybe_corrupt(line)
         return line
 
-    # Write function
+    # Set up stats collector and dashboard if needed
+    stats_collector = None
+    dashboard = None
+    if use_dashboard:
+        from logsynth.tui import Dashboard, StatsCollector
+
+        # Parse duration to seconds for dashboard
+        target_duration_secs = None
+        if actual_duration:
+            target_duration_secs = parse_duration(actual_duration)
+
+        stats_collector = StatsCollector()
+        stats_collector.register_stream(generator.template.name)
+        dashboard = Dashboard(
+            stats=stats_collector,
+            target_count=actual_count,
+            target_duration=target_duration_secs,
+            console=console,
+        )
+
+    # Write function (with optional stats tracking)
+    stream_name = generator.template.name
+
     def write(line: str) -> None:
         sink.write(line)
+        if stats_collector:
+            stats_collector.record_emit(stream_name)
 
     try:
+        # Start dashboard if enabled
+        if dashboard:
+            dashboard.start()
+
         # Determine run mode
         if burst:
             if not actual_duration:
+                if dashboard:
+                    dashboard.stop()
                 err_console.print("[red]Error:[/red] --burst requires --duration")
                 raise typer.Exit(1)
             segments = parse_burst_pattern(burst)
@@ -281,10 +370,23 @@ def run(
             # Default: run indefinitely until Ctrl+C (using large duration)
             emitted = run_with_duration(actual_rate, "24h", generate, write)
 
-        console.print(f"\n[green]Emitted {emitted} log lines[/green]", highlight=False)
+        # Stop dashboard and print final stats
+        if dashboard:
+            if stats_collector:
+                stats_collector.mark_done()
+            dashboard.stop()
+            dashboard.print_final_stats()
+        else:
+            console.print(f"\n[green]Emitted {emitted} log lines[/green]", highlight=False)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]Interrupted[/yellow]")
+        if dashboard:
+            if stats_collector:
+                stats_collector.mark_done()
+            dashboard.stop()
+            dashboard.print_final_stats()
+        else:
+            console.print("\n[yellow]Interrupted[/yellow]")
     finally:
         sink.close()
 

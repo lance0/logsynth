@@ -35,7 +35,7 @@
 - [x] 135 total tests
 
 ## v0.3.0 (Future)
-- [ ] TUI dashboard with live stats
+- [x] TUI dashboard with live stats (`--live` flag)
 - [ ] Replay mode (from existing logs)
 - [ ] Log file watching and augmentation
 - [x] Schema inference from sample logs (`logsynth infer`)

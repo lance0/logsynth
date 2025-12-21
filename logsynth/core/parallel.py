@@ -6,10 +6,14 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from logsynth.core.generator import LogGenerator, create_generator
 from logsynth.core.output import Sink
 from logsynth.core.rate_control import run_with_count, run_with_duration
+
+if TYPE_CHECKING:
+    from logsynth.tui.stats import StatsCollector
 
 GenerateFn = Callable[[], str]
 WriteFn = Callable[[str], None]
@@ -62,6 +66,7 @@ class StreamRunner:
         sink: Sink,
         rate: float,
         name: str | None = None,
+        stats_collector: StatsCollector | None = None,
     ) -> None:
         self.generator = generator
         self.sink = sink
@@ -70,6 +75,13 @@ class StreamRunner:
         self.emitted = 0
         self._thread: threading.Thread | None = None
         self._error: Exception | None = None
+        self._stats_collector = stats_collector
+
+    def _write(self, line: str) -> None:
+        """Write a line and track stats."""
+        self.sink.write(line)
+        if self._stats_collector:
+            self._stats_collector.record_emit(self.name)
 
     def _run_duration(self, duration: float | str) -> None:
         """Run for a duration."""
@@ -78,7 +90,7 @@ class StreamRunner:
                 self.rate,
                 duration,
                 self.generator.generate,
-                self.sink.write,
+                self._write,
             )
         except Exception as e:
             self._error = e
@@ -90,7 +102,7 @@ class StreamRunner:
                 self.rate,
                 count,
                 self.generator.generate,
-                self.sink.write,
+                self._write,
             )
         except Exception as e:
             self._error = e
@@ -146,6 +158,7 @@ def run_parallel_streams(
     format_override: str | None = None,
     seed: int | None = None,
     stream_configs: dict[str, StreamConfig] | None = None,
+    stats_collector: StatsCollector | None = None,
 ) -> dict[str, int]:
     """Run multiple template streams in parallel.
 
@@ -158,6 +171,7 @@ def run_parallel_streams(
         format_override: Optional format override for all templates
         seed: Random seed
         stream_configs: Per-stream configuration overrides
+        stats_collector: Optional stats collector for live dashboard
 
     Returns:
         Dictionary mapping template names to lines emitted
@@ -190,7 +204,7 @@ def run_parallel_streams(
         stream_format = (cfg.format if cfg and cfg.format else format_override)
 
         generator = create_generator(source, stream_format, seed)
-        runner = StreamRunner(generator, sink, stream_rate)
+        runner = StreamRunner(generator, sink, stream_rate, stats_collector=stats_collector)
         runners.append(runner)
 
     # Start all streams
