@@ -2,6 +2,13 @@
 
 All notable changes to LogSynth will be documented in this file.
 
+## [0.3.1] - 2025-12-21
+
+### Fixed
+- TUI dashboard now updates properly during parallel stream execution
+- Dashboard display no longer prints multiple copies (uses NullSink to prevent stdout interference)
+- CLI tests fixed for ANSI escape code handling in CI environments
+
 ## [0.3.0] - 2025-12-21
 
 ### Added
