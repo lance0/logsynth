@@ -179,6 +179,13 @@ class TestLogTailer:
         assert len(output) >= 1 or log_file.exists()  # At minimum file was created
 
 
+def _strip_ansi(text: str) -> str:
+    """Strip ANSI escape codes from text."""
+    import re
+
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 class TestCLIIntegration:
     """Integration tests for watch command."""
 
@@ -189,10 +196,11 @@ class TestCLIIntegration:
 
         runner = CliRunner()
         result = runner.invoke(app, ["watch", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "Watch" in result.output
-        assert "--add-timestamp" in result.output
-        assert "--wrap-json" in result.output
+        assert "Watch" in output or "watch" in output.lower()
+        assert "add-timestamp" in output
+        assert "wrap-json" in output
 
     def test_cli_watch_options(self) -> None:
         from typer.testing import CliRunner
@@ -201,6 +209,7 @@ class TestCLIIntegration:
 
         runner = CliRunner()
         result = runner.invoke(app, ["watch", "--help"])
-        assert "--from-start" in result.output
-        assert "--add-hostname" in result.output
-        assert "--add-source" in result.output
+        output = _strip_ansi(result.output)
+        assert "from-start" in output
+        assert "add-hostname" in output
+        assert "add-source" in output

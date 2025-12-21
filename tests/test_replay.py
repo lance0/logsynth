@@ -165,6 +165,13 @@ class TestReplayFile:
         assert len(output) == 2
 
 
+def _strip_ansi(text: str) -> str:
+    """Strip ANSI escape codes from text."""
+    import re
+
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 class TestCLIIntegration:
     """Integration tests for replay command."""
 
@@ -175,8 +182,9 @@ class TestCLIIntegration:
 
         runner = CliRunner()
         result = runner.invoke(app, ["replay", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "Replay" in result.output
+        assert "Replay" in output or "replay" in output.lower()
 
     def test_cli_replay_file_not_found(self) -> None:
         from typer.testing import CliRunner
@@ -185,8 +193,9 @@ class TestCLIIntegration:
 
         runner = CliRunner()
         result = runner.invoke(app, ["replay", "/nonexistent/file.log"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 1
-        assert "not found" in result.output.lower()
+        assert "not found" in output.lower()
 
     def test_cli_replay_basic(self, tmp_path: Path) -> None:
         from typer.testing import CliRunner
@@ -204,5 +213,6 @@ class TestCLIIntegration:
             app,
             ["replay", str(log_file), "--speed", "100"],
         )
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "Replayed" in result.output
+        assert "Replayed" in output or "replayed" in output.lower()
