@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+import threading
+import time
 
 from rich.console import Console, Group
 from rich.live import Live
@@ -164,7 +166,7 @@ class Dashboard:
         )
 
     def start(self) -> Live:
-        """Start the live display and return the Live context."""
+        """Start the live display and background updater thread."""
         self._live = Live(
             self.render(),
             console=self.console,
@@ -172,7 +174,18 @@ class Dashboard:
             transient=True,
         )
         self._live.start()
+
+        # Start background updater thread
+        self._update_thread = threading.Thread(target=self._update_loop, daemon=True)
+        self._update_thread.start()
+
         return self._live
+
+    def _update_loop(self) -> None:
+        """Background thread that periodically updates the dashboard."""
+        while self._live and not self.stats.is_done:
+            self.update()
+            time.sleep(0.25)
 
     def update(self) -> None:
         """Update the live display."""
